@@ -1,0 +1,62 @@
+body {
+  background-color: lightblue;
+}
+
+table {
+  border-collapse: collapse;
+}
+
+table, th, td {
+  /*border: 1px solid black;*/
+  padding: 1px;
+}
+
+textarea {
+  box-sizing: border-box;
+  overflow: hidden;
+  font-size: 18px;
+  background-color: #E0FFFF;
+  border-width: 2px;
+  padding: 8px;
+  -moz-border-radius: 8px;
+  -webkit-border-radius: 8px;
+  border-radius: 8px;
+  outline: none;
+  resize: none;
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  padding-right: 100px;
+}
+textarea:focus {
+  border-color: #555555;
+}
+
+button {
+  background-color: lightskyblue;
+  border: 2px solid grey;
+  outline: none;
+  padding: 10px 24px;
+  -moz-border-radius: 8px;
+  -webkit-border-radius: 8px;
+  border-radius: 8px;
+  position:relative;
+}
+
+button:focus {
+  border: 2px solid #555555;
+}
+
+div#textarea-container {
+  width: 500px;
+  height: 42px;
+  position:relative;
+  padding: 0px;
+}
+
+div#search-hint {
+  position:absolute;
+  right: 2%;
+  color: #999999;
+  bottom:35%;
+}

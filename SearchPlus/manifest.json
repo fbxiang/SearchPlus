@@ -1,0 +1,39 @@
+{
+  "manifest_version": 2,
+  "name"            : "SearchPlus",
+  "description"     : "Omnipotent(Maybe) Page Search Tool",
+  "short_name"      : "SearchPlus",
+  "version"         : "0.1",
+ 
+  "browser_action": {
+    "default_popup": "index.html",
+    "default_icon" : "images/logo.png"
+  },
+
+  "background": {
+    "scripts": [
+      "app/background.js"
+    ]
+  },
+
+  "commands": {
+    "_execute_browser_action":{
+      "suggested_key": {
+        "default": "Ctrl+Shift+F"
+      }
+    }
+  },
+
+  "permissions": [
+    "tabs",
+    "<all_urls>",
+    "activeTab"
+  ],
+
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js":["jquery-2.1.4.min.js", "app/contentscripts/search.js"]
+    }
+  ]
+}
