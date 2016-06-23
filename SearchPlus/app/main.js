@@ -1,9 +1,11 @@
+/* Background page stuff */
 var background = chrome.extension.getBackgroundPage();
+/* initialize a counter which controls which history item to read. */
 var history_counter = history_length();
 
+/* detect up/down arrow is just pressed. if so, go over the history entries. */
 var upkey = 0;
 var downkey = 0;
-
 $(document).ready(function(){
   $("#search-text").keydown(function(event) {
     if (event.which == 38 && upkey == 0) {
@@ -17,7 +19,8 @@ $(document).ready(function(){
   });
 });
 
-$(document).ready(function(){
+/* detect up/down is released. */
+$(document).ready(function() {
   $("#search-text").keyup(function(event) {
     if (event.which == 38) upkey = 0;
     else if (event.which == 40) downkey = 0;
@@ -25,12 +28,13 @@ $(document).ready(function(){
 });
 
 /*
- * when enter is pressed, send message {search, enter} to content script
+ * [Search mode] when enter is pressed, send message {"search", "enter", search_text} to content script
+ * [Code   mode] when enter is pressed, send message {"code," "enter", search_text}
  */
 $(document).ready(function(){
   $("#search-text").keypress(function(event) {
     // enter is pressed
-    if (event.which == 13) {
+    if (event.which == 13 && !event.shiftKey) {
       search_text = $("#search-text").val();
       if (is_cmd(search_text)) {
         process_cmd(search_text.substring(1));
@@ -42,7 +46,7 @@ $(document).ready(function(){
         });
       }
       else {
-        message_current_tab(create_message("search", "enter", search_text), process_response);
+        message_current_tab(create_message("search", "enter", search_text), process_search_response);
       }
       history_add(search_text);
       history_set_counter();
@@ -56,7 +60,7 @@ $(document).ready(function(){
 
 /*
  * when text is typed into the search bar
- * send message {search, type} to content script
+ * send message {"search, "text", text} to content script
  * 
  */
 $(document).ready(function() {
@@ -72,7 +76,8 @@ $(document).ready(function() {
   });
 });
 
-function process_response(method, action, content) {
+/* Working in progerss*/
+function process_search_response(method, action, content) {
   if (method == "WIP") {
     alert("WIP");
   }
@@ -87,7 +92,7 @@ function is_cmd(keyword) {
 }
 
 function process_cmd(keyword) {
-  var words = keyword.split(" ");
+  var words = keyword.split(" "); // TODO: handle commands with more then 1 argument
   if (words.length == 0) {
     display_hint("Invalid Command", "red");
     return;
@@ -104,52 +109,61 @@ function execute_cmd(words) {
   clear_search();
 }
 
+/* Show hint in the right of search area */
 function display_hint(content, color) {
   $("#search-hint").text(content);
   $("#search-hint").css("color", color);
 }
 
+/* Clear search area */
 function clear_search() {
   $("#search-text").val("");
 }
 
+/* Set search area 
+ * @param item     string to set
+ */
 function set_search(item) {
   $("#search-text").val(item);
 }
 
+/* clear hint displayed in the right of the search area */
 function clear_hint() {
   $("#search-hint").text("");
 }
 
+/* Add search history to background page */
 function history_add(item) {
   background.search_history.push(item);
 }
 
-function history_clear() {
-  background.search_history = [];
-}
-
+/* Helper function to check the ith entry is available in history*/
 function history_has(i) {
   return i >= 0 && i < background.search_history.length;
 }
 
+/* Get the ith entry from history */
 function history_get(i) {
   return background.search_history[i];
 }
 
+/* Get the length of history */
 function history_length() {
   return background.search_history.length;
 }
 
+/* Set history_counter to after the last entry */
 function history_set_counter() {
   history_counter = history_length();
 }
 
+/* Clear history in background page */
 function history_clear() {
   background.search_history = [];
   history_counter = 0;
 }
 
+/* Go back 1 history item */
 function history_back() {
   if (history_has(history_counter-1)) {
     history_counter--;
@@ -157,6 +171,7 @@ function history_back() {
   return history_get(history_counter);
 }
 
+/* Go forward 1 history item */
 function history_forward() {
   if (history_has(history_counter+1)) {
     history_counter++;
@@ -168,10 +183,12 @@ function history_forward() {
   }
 }
 
+/* Set background option (key, value) */
 function set_background_option(k, v) {
   background.global_options[k] = v;
 }
 
+/* Get background option (key) */
 function get_background_option(k) {
   return background.global_options[k];
 }
@@ -180,7 +197,7 @@ function get_background_option(k) {
  * Send message to current tab content script
  * @param message       the message to send, created via create_message(method, action, content)
  * @param func_response(method, action, content)
- *                      fcuntion that processes the response from content script
+ *                      function that processes the response from content script
  */
 function message_current_tab(message, func_response) {
   chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
@@ -200,17 +217,25 @@ function create_message(method, action, content) {
   return ({_method:method, _action:action, _content:content});
 }
 
+/*
+ * Use continuation style to process message
+ * @param message      The message to process created by create_message
+ * @param func(method, action, content)
+ *                     Function that processes the message
+ */
 function process_message(message, func) {
   func(message._method, message._action, message._content);
 }
 
+/* Command lookup table*/ 
 var command_table = {
   "test": function() {
     alert("test"); 
     display_hint("success", "green");
   },
   "normal": function() { 
-    set_background_option("mode", "normal"); 
+    set_background_option("mode", "normal");
+    $("#textarea-container").css("height", "42px");
     display_hint("mode set", "green");
   },
   "regex": function() { 
@@ -223,6 +248,7 @@ var command_table = {
   },
   "code": function() { 
     set_background_option("mode", "code"); 
+    $("#textarea-container").css("height", "200px");
     display_hint("mode set", "green");
   },
   "mode": function() { 
