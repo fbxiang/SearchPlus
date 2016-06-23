@@ -8,6 +8,7 @@ chrome.runtime.onMessage.addListener(function(message, sender, sendResponse) {
       var keyword = content;
       console.log("[Search]"+keyword);
       var response = process(keyword, action);
+      // Function in progress
       iterate_text([], function(list, node) {
       	  // alert(node.innerHTML);
       });
@@ -15,9 +16,10 @@ chrome.runtime.onMessage.addListener(function(message, sender, sendResponse) {
       return;
     }
     else if (method == "code") {
+      // eval evaluates the code
       sendResponse(create_message("code", "response", eval(content)));
     }
-    sendResponse({});
+    sendResponse(create_message("Unknown","None","None"));
   });
 });
 
