@@ -3,6 +3,10 @@ var background = chrome.extension.getBackgroundPage();
 /* initialize a counter which controls which history item to read. */
 var history_counter = history_length();
 
+$(document).ready(function() {
+  init_mode(get_background_option("mode"));
+});
+
 /* detect up/down arrow is just pressed. if so, go over the history entries. */
 var upkey = 0;
 var downkey = 0;
@@ -234,21 +238,19 @@ var command_table = {
     display_hint("success", "green");
   },
   "normal": function() { 
-    set_background_option("mode", "normal");
-    $("#textarea-container").css("height", "42px");
+	change_mode_to(MODE.NORMAL);
     display_hint("mode set", "green");
   },
   "regex": function() { 
-    set_background_option("mode", "regex"); 
+    change_mode_to(MODE.REGEX);
     display_hint("mode set", "green");
   },
   "multi": function() { 
-    set_background_option("mode", "multi"); 
+  	change_mode_to(MODE.MULTI);
     display_hint("mode set", "green");
   },
   "code": function() { 
-    set_background_option("mode", "code"); 
-    $("#textarea-container").css("height", "200px");
+  	change_mode_to(MODE.CODE);
     display_hint("mode set", "green");
   },
   "mode": function() { 
@@ -260,4 +262,39 @@ var command_table = {
   "default": function() {
     display_hint("no such command", "red");
   }
+}
+
+var MODE = {
+  NORMAL: 0,
+  REGEX: 1,
+  MULTI: 2,
+  CODE: 3,
+};
+var MODE_BEHAVIOR = {};
+MODE_BEHAVIOR[MODE.NORMAL] = [function(){}, function(){}];
+MODE_BEHAVIOR[MODE.REGEX] = [function(){}, function(){}];
+MODE_BEHAVIOR[MODE.MULTI] = [function(){}, function(){}];
+MODE_BEHAVIOR[MODE.CODE] = [
+  function(){
+    $("#textarea-container").css("height", "200px");
+  }, 
+  function(){
+    $("#textarea-container").css("height", "42px");
+  }
+];
+
+function change_mode_to(mode) {
+  pmode = get_background_option("mode");
+  if (pmode == mode) return;
+  quit_mode(pmode);
+  set_background_option("mode", mode);
+  init_mode(mode);
+}
+
+function init_mode(mode) {
+  MODE_BEHAVIOR[mode][0]();
+}
+
+function quit_mode(mode) {
+  MODE_BEHAVIOR[mode][1]();
 }
