@@ -43,7 +43,7 @@ $(document).ready(function(){
       if (is_cmd(search_text)) {
         process_cmd(search_text.substring(1));
       }
-      else if (get_background_option("mode") == "code") {
+      else if (get_background_option("mode") == MODE.CODE) {
         message_current_tab(create_message("code", "enter", search_text), function(method, action, content) {
           display_hint(content, "darkblue");
           clear_search();
