@@ -5,6 +5,7 @@ var history_counter = history_length();
 
 $(document).ready(function() {
   ModeInfo[get_mode()].init();
+  set_search(background.search_text);
 });
 
 /* detect up/down arrow is just pressed. if so, go over the history entries. */
@@ -77,6 +78,7 @@ $(document).ready(function() {
         console.log("Search response received.");
       });
     }
+    background.search_text = text;
   });
 });
 

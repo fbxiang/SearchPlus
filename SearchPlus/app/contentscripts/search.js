@@ -10,7 +10,7 @@ chrome.runtime.onMessage.addListener(function(message, sender, sendResponse) {
       var response = process(keyword, action);
       // Function in progress
       iterate_text([], function(list, node) {
-      	  // alert(node.innerHTML);
+        node.nodeValue = "test";
       });
       sendResponse(response);
       return;
