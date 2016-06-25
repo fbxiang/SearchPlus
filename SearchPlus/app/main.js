@@ -4,7 +4,7 @@ var background = chrome.extension.getBackgroundPage();
 var history_counter = history_length();
 
 $(document).ready(function() {
-  init_mode(get_background_option("mode"));
+  ModeInfo[get_mode()].init();
 });
 
 /* detect up/down arrow is just pressed. if so, go over the history entries. */
@@ -43,7 +43,7 @@ $(document).ready(function(){
       if (is_cmd(search_text)) {
         process_cmd(search_text.substring(1));
       }
-      else if (get_background_option("mode") == MODE.CODE) {
+      else if (get_mode() == MODE_CODE) {
         message_current_tab(create_message("code", "enter", search_text), function(method, action, content) {
           display_hint(content, "darkblue");
           clear_search();
@@ -71,7 +71,7 @@ $(document).ready(function() {
   $("#search-text").bind("input propertychange", function(event){
     clear_hint();
     var text = $("#search-text").val();
-    if (text != "" && !is_cmd(text) && get_background_option("mode") != "code"){
+    if (text != "" && !is_cmd(text) && get_mode() != MODE_CODE){
       console.log("Sending search request.");
       message_current_tab(create_message("search", "text", text), function(){
         console.log("Search response received.");
@@ -238,19 +238,19 @@ var command_table = {
     display_hint("success", "green");
   },
   "normal": function() { 
-	change_mode_to(MODE.NORMAL);
+	change_mode_to(MODE_NORMAL);
     display_hint("mode set", "green");
   },
   "regex": function() { 
-    change_mode_to(MODE.REGEX);
+    change_mode_to(MODE_REGEX);
     display_hint("mode set", "green");
   },
   "multi": function() { 
-  	change_mode_to(MODE.MULTI);
+  	change_mode_to(MODE_MULTI);
     display_hint("mode set", "green");
   },
   "code": function() { 
-  	change_mode_to(MODE.CODE);
+  	change_mode_to(MODE_CODE);
     display_hint("mode set", "green");
   },
   "mode": function() { 
@@ -264,37 +264,78 @@ var command_table = {
   }
 }
 
-var MODE = {
-  NORMAL: 0,
-  REGEX: 1,
-  MULTI: 2,
-  CODE: 3,
-};
-var MODE_BEHAVIOR = {};
-MODE_BEHAVIOR[MODE.NORMAL] = [function(){}, function(){}];
-MODE_BEHAVIOR[MODE.REGEX] = [function(){}, function(){}];
-MODE_BEHAVIOR[MODE.MULTI] = [function(){}, function(){}];
-MODE_BEHAVIOR[MODE.CODE] = [
-  function(){
-    $("#textarea-container").css("height", "200px");
-  }, 
-  function(){
-    $("#textarea-container").css("height", "42px");
+Mode_Count = 0;
+ModeInfo = {};
+
+MODE_DEFAULT = {
+  id: -1,
+  name: "",
+  init: function(){},
+  quit: function(){},
+}
+
+/* Create a mode. Each mode will be assigned an id
+ * @param options     a list, "name" property is required,
+ *                            "init" and "quit" properties are optional
+ * @return the id
+ */
+function create_mode(options) {
+  mode = {};
+  if (options.hasOwnProperty("name")) {
+    mode.name = options.name;
   }
-];
+  else {
+  	console.log("Create Mode Failed");
+  	return;
+  }
+  if (options.hasOwnProperty("init")) {
+    mode.init = options.init;
+  }
+  else {
+    mode.init = MODE_DEFAULT.init;
+  }
+  if (options.hasOwnProperty("quit")) {
+    mode.quit = options.quit;
+  }
+  else {
+  	mode.quit = MODE_DEFAULT.quit;
+  }
+  mode.id = Mode_Count++; 
+  ModeInfo[mode.id] = mode;
+  return mode.id;
+}
+
+MODE_NORMAL = create_mode({
+  name: "normal"
+});
+
+MODE_REGEX = create_mode({
+  name: "regex"
+});
+
+MODE_MULTI = create_mode({
+  name: "multi"
+});
+
+MODE_CODE = create_mode({
+  name: "code",
+  init: function(){
+  	$("#textarea-container").css("height", "200px");
+  },
+  quit: function(){
+  	$("#textarea-container").css("height", "42px");
+  }
+})
 
 function change_mode_to(mode) {
+  console.assert(ModeInfo.hasOwnProperty(mode));
   pmode = get_background_option("mode");
   if (pmode == mode) return;
-  quit_mode(pmode);
+  ModeInfo[pmode].quit();
   set_background_option("mode", mode);
-  init_mode(mode);
+  ModeInfo[mode].init();
 }
 
-function init_mode(mode) {
-  MODE_BEHAVIOR[mode][0]();
-}
-
-function quit_mode(mode) {
-  MODE_BEHAVIOR[mode][1]();
+function get_mode() {
+  return get_background_option("mode");
 }
