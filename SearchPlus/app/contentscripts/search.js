@@ -46,13 +46,11 @@ function iterate_text(info, func) {
 }
 
 function iterate_text_aux(node, info, func) {
-  
-  var cnodes = node.childNodes;
-  if (cnodes.length == 1) {
-    // alert(node.innerHTML);
-  	func(info, node);
-  	return;
+  if (node.nodeValue != null) {
+    func(info, node);
+    return;
   }
+  var cnodes = node.childNodes;
   for (var i = 0; i < cnodes.length; i++) {
     iterate_text_aux(cnodes[i], info, func);
   }
