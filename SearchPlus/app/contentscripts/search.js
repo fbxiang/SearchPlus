@@ -10,7 +10,8 @@ chrome.runtime.onMessage.addListener(function(message, sender, sendResponse) {
       var response = process(keyword, action);
       // Function in progress
       iterate_text([], function(list, node) {
-        node.nodeValue = "test";
+        // alert(node.nodeValue);
+        // node.nodeValue = content;
       });
       sendResponse(response);
       return;
@@ -54,4 +55,10 @@ function iterate_text_aux(node, info, func) {
   for (var i = 0; i < cnodes.length; i++) {
     iterate_text_aux(cnodes[i], info, func);
   }
+}
+
+function replace(source, target) {
+  iterate_text(null, function(info, node){
+    node.nodeValue = node.nodeValue.replace(source, target);
+  })
 }
