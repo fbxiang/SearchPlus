@@ -46,6 +46,9 @@ function create_message(method, action, content) {
   return ({_method:method, _action:action, _content:content});
 }
 
+/*
+ * Interface for message receiving. (Message should be handled with this function)
+ */
 function process_message(message, callback) {
   callback(message._method, message._action, message._content);
 }
@@ -76,10 +79,12 @@ function iterate_text_aux(node, info, callback) {
 function replace(source, target) {
   iterate_text(null, function(info, node){
   	var pNode = node.parentNode;
-    node.data = node.data.replace(source, "<i style=\"color=blue\">"+target+"</i>");
+    node.data = node.data.replace(source, target);
   })
 }
 
+/* Add colored highlight to all target text 
+ */
 function highlight(target, color) {
   color || (color = "yellow");
   if (target.length <= 0) return;
@@ -107,6 +112,13 @@ function highlight(target, color) {
   return info.count;
 }
 
+/* Iterate throught the document body
+ * @param info            first argument of call back
+ * @param key_func(node)  returns 1 if the node is our target, callback(info, node) will be applied
+ *                        returns 0 if the node shoule be further expanded
+ *                        returns -1 if the node should be discarded immediately
+ * @param callback(info, node)
+ */
 function iterate(info, key_func, callback) {
   iterate_aux(body, info, key_func, callback);
 }
@@ -128,6 +140,8 @@ function iterate_aux(node, info, key_func, callback) {
   }
 }
 
+/* Removes all highlights at once
+ */
 function remove_highlight() {
   iterate_remove_highlight(document.body);
 }
