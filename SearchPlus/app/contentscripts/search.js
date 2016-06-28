@@ -20,20 +20,21 @@ chrome.runtime.onMessage.addListener(function(message, sender, sendResponse) {
 });
 
 function process(keyword, action) {
+  var count = 0;
   switch(action) {
     case "normal":
       remove_highlight();
-      highlight(keyword);
+      count = highlight(keyword);
       break;
     case "multi":
       remove_highlight();
       keywords = keyword.split(" ");
       colors = ["yellow", "aqua", "chartreuse", "Magenta", "orange"];
       for (var i = 0; i < keywords.length; i++) {
-        highlight(keywords[i], colors[i%(colors.length)]);
+        count += highlight(keywords[i], colors[i%(colors.length)]);
       }
   }
-  return create_message("search","response","");
+  return create_message("search","response",count);
 }
 
 /*
@@ -54,26 +55,20 @@ function process_message(message, callback) {
 }
 
 function iterate_text(info, callback) {
-  iterate_text_aux(document.body, info, callback);
-}
-
-function iterate_text_aux(node, info, callback) {
-  exclude_elements = ['script', 'style', 'iframe', 'canvas', 'mark'];
-  var child = node.firstChild;
-  while(child){
-    switch (child.nodeType) {
+  iterate(info, function(node) {
+    exclude_elements = ['script', 'style', 'iframe', 'canvas', 'mark'];
+    switch (node.nodeType) {
       case 1:
-        if (exclude_elements.indexOf(child.tagName.toLowerCase()) > -1) {
-          break;
-        }
-        iterate_text_aux(child, info, callback);
+        if (exclude_elements.indexOf(node.tagName.toLowerCase()) > -1)
+          return -1;
         break;
       case 3:
-        callback(info, child);
-        break;
+        return 1;
+      break;
     }
-    child = child.nextSibling;
-  }
+    return 0;
+  }, callback);
+
 }
 
 function replace(source, target) {
@@ -92,21 +87,21 @@ function highlight(target, color) {
   iterate_text(info, function(info, node){
     var pNode = node.parentNode;
     var idx;
-    while ((idx = node.data.indexOf(target)) >= 0) {
+    while ((idx = node.data.toLowerCase().indexOf(target.toLowerCase())) >= 0) {
       info.count++;
       var text = node.data;
-      var text1 = text.substring(0, idx);
-      var text2 = text.substring(idx+target.length);
-      var textNode1 = document.createTextNode(text1);
-      // var textNode2 = document.createTextNode(text2);
+      var textLeft = text.substring(0, idx);
+      var textRight = text.substring(idx+target.length);
+      var textMid = text.substring(idx, idx+target.length);
+      var textNodeLeft = document.createTextNode(textLeft);
       var iNode = document.createElement("mark")
-      var textNode = document.createTextNode(target);
+      var textNodeMid = document.createTextNode(textMid);
       iNode.setAttribute("class", "search-plus-style");
       iNode.style["background-color"] = color;
-      iNode.appendChild(textNode);
+      iNode.appendChild(textNodeMid);
       pNode.insertBefore(iNode, node);
-      pNode.insertBefore(textNode1, iNode);
-      node.data = text2;
+      pNode.insertBefore(textNodeLeft, iNode);
+      node.data = textRight;
     }
   });
   return info.count;
@@ -120,7 +115,7 @@ function highlight(target, color) {
  * @param callback(info, node)
  */
 function iterate(info, key_func, callback) {
-  iterate_aux(body, info, key_func, callback);
+  iterate_aux(document.body, info, key_func, callback);
 }
 
 function iterate_aux(node, info, key_func, callback) {
