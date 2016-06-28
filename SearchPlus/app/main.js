@@ -72,11 +72,21 @@ $(document).ready(function() {
   $("#search-text").bind("input propertychange", function(event){
     clear_hint();
     var text = $("#search-text").val();
-    if (text != "" && !is_cmd(text) && get_mode() != MODE_CODE){
+    if (!is_cmd(text) && get_mode() != MODE_CODE){
       console.log("Sending search request.");
-      message_current_tab(create_message("search", "text", text), function(){
-        console.log("Search response received.");
-      });
+      switch (get_mode()) {
+        case MODE_NORMAL:
+          message_current_tab(create_message("search", "normal", text), function(){
+            console.log("Search response received.");
+          });
+          break;
+        case MODE_MULTI:
+          message_current_tab(create_message("search", "multi", text), function(){
+            console.log("Search response received.");
+          });
+          break;
+      }
+
     }
     background.search_text = text;
   });
