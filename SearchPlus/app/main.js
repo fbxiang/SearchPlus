@@ -77,13 +77,13 @@ $(document).ready(function() {
       switch (get_mode()) {
         case MODE_NORMAL:
           message_current_tab(create_message("search", "normal", text), function(method, action, content){
-            display_hint(content);
+            display_hint(content, "grey");
             console.log("Search response received.");
           });
           break;
         case MODE_MULTI:
           message_current_tab(create_message("search", "multi", text), function(method, action, content){
-            display_hint(content);
+            display_hint(content, "grey");
             console.log("Search response received.");
           });
           break;
@@ -96,7 +96,7 @@ $(document).ready(function() {
 
 /* Working in progerss*/
 function process_search_response(method, action, content) {
-  display_hint("search recorded", "green");
+  display_hint(content, "grey");
 }
 
 /*

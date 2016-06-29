@@ -1,3 +1,6 @@
+var highlighted_elems = [] // list for storing elements
+var elem_counter = -1 // selected element
+
 /*
  * register listener for messages
  */
@@ -24,17 +27,33 @@ function process(keyword, action) {
   switch(action) {
     case "normal":
       remove_highlight();
-      count = highlight(keyword);
+      reset_counter();
+      highlight(keyword);
+      highlighted_elems = collect_highlighted_elements();
+      count = highlighted_elems.length;
+      emphasize_elem(next_elem());
+      scroll_to(this_elem());
       break;
     case "multi":
       remove_highlight();
+      reset_counter();
       keywords = keyword.split(" ");
       colors = ["yellow", "aqua", "chartreuse", "Magenta", "orange"];
       for (var i = 0; i < keywords.length; i++) {
-        count += highlight(keywords[i], colors[i%(colors.length)]);
+        highlight(keywords[i], colors[i%(colors.length)]);
       }
+      highlighted_elems = collect_highlighted_elements();
+      count = highlighted_elems.length;
+      emphasize_elem(next_elem());
+      scroll_to(this_elem());
+      break;
+    case "enter":
+      remove_emphasis(this_elem());
+      emphasize_elem(next_elem());
+      scroll_to(this_elem());
+      count = highlighted_elems.length;
   }
-  return create_message("search","response",count);
+  return create_message("search","response", (elem_counter+1) + " of " + count);
 }
 
 /*
@@ -60,6 +79,8 @@ function iterate_text(info, callback) {
     switch (node.nodeType) {
       case 1:
         if (exclude_elements.indexOf(node.tagName.toLowerCase()) > -1)
+          return -1;
+        if (node.offsetParent == null)
           return -1;
         break;
       case 3:
@@ -135,6 +156,30 @@ function iterate_aux(node, info, key_func, callback) {
   }
 }
 
+
+/*
+ * Collect all highlighted elements
+ */
+function collect_highlighted_elements() {
+  elems = [];
+  exclude_elements = ['script', 'style', 'iframe', 'canvas'];
+  iterate(elems, 
+  	function(node){
+  	  if (node.nodeType != 1) return -1;
+      if (exclude_elements.indexOf(node.tagName.toLowerCase()) > -1)
+        return -1;
+      if (node.offsetParent == null) // invisible
+        return -1;
+      if (node.tagName.toLowerCase() == "mark" && node.getAttribute("class").indexOf("search-plus") > -1)
+        return 1;
+      return 0;
+  	},
+  	function(elems, node) {
+  	  elems.push(node);
+  	});
+  return elems;
+}
+
 /* Removes all highlights at once
  */
 function remove_highlight() {
@@ -171,4 +216,34 @@ function iterate_remove_highlight(node) {
     else {iterate_remove_highlight(child);}
     child = child.nextSibling;
   }
+}
+
+function reset_counter() {
+  elem_counter = -1;
+}
+
+function next_elem() {
+  if (highlighted_elems.length == 0) return null;
+  elem_counter = (elem_counter+1) % highlighted_elems.length;
+  return highlighted_elems[elem_counter];
+}
+
+function this_elem() {
+  if (highlighted_elems.length == 0) return null;
+  return highlighted_elems[elem_counter];
+}
+
+function emphasize_elem(node) {
+  if (node == null) return;
+  node.style["border"] = "2px solid black"
+}
+
+function remove_emphasis(node) {
+  if (node == null) return;
+  node.style["border"] = "";
+}
+
+function scroll_to(node) {
+  if (node == null) return;
+  node.scrollIntoView();
 }
