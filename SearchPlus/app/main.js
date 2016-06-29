@@ -15,11 +15,13 @@ $(document).ready(function(){
   $("#search-text").keydown(function(event) {
     if (event.which == 38 && upkey == 0) {
       upkey = 1;
-      set_search(history_back());
+      if (get_mode() != MODE_CODE || event.shiftKey)
+        set_search(history_back());
     }
     if (event.which == 40 && downkey == 0) {
       downkey = 1;
-      set_search(history_forward());
+      if (get_mode() != MODE_CODE || event.shiftKey)
+        set_search(history_forward());
     };
   });
 });
@@ -39,19 +41,23 @@ $(document).ready(function() {
 $(document).ready(function(){
   $("#search-text").keypress(function(event) {
     // enter is pressed
-    if (event.which == 13 && !event.shiftKey) {
+    if (event.which == 13) {
       search_text = $("#search-text").val();
       if (is_cmd(search_text)) {
         process_cmd(search_text.substring(1));
+        return false;
       }
-      else if (get_mode() == MODE_CODE) {
-        message_current_tab(create_message("code", "enter", search_text), function(method, action, content) {
-          display_hint(content, "darkblue");
-          clear_search();
-        });
-      }
-      else {
-        message_current_tab(create_message("search", "enter", search_text), process_search_response);
+      switch (get_mode()) {
+        case MODE_CODE:
+          if (!event.shiftKey) return true;
+          message_current_tab(create_message("code", "enter", search_text), function(method, action, content) {
+            display_hint(content, "darkblue");
+            clear_search();
+          });
+          break;
+        default:
+          message_current_tab(create_message("search", "enter", search_text), process_search_response);
+          break;
       }
       history_add(search_text);
       history_set_counter();
