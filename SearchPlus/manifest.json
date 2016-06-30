@@ -3,7 +3,7 @@
   "name"            : "SearchPlus",
   "description"     : "Omnipotent(Maybe) Page Search Tool. Now in testing, expect frequent updates",
   "short_name"      : "SearchPlus",
-  "version"         : "pre-alpha-0.1",
+  "version"         : "0.2",
  
   "browser_action": {
     "default_popup": "index.html",
