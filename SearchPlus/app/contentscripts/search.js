@@ -30,7 +30,6 @@ function process(keyword, action) {
       reset_counter();
       highlight(keyword);
       highlighted_elems = collect_highlighted_elements();
-      count = highlighted_elems.length;
       emphasize_elem(next_elem());
       scroll_to(this_elem());
       break;
@@ -43,7 +42,6 @@ function process(keyword, action) {
         highlight(keywords[i], colors[i%(colors.length)]);
       }
       highlighted_elems = collect_highlighted_elements();
-      count = highlighted_elems.length;
       emphasize_elem(next_elem());
       scroll_to(this_elem());
       break;
@@ -51,9 +49,8 @@ function process(keyword, action) {
       remove_emphasis(this_elem());
       emphasize_elem(next_elem());
       scroll_to(this_elem());
-      count = highlighted_elems.length;
   }
-  return create_message("search","response", (elem_counter+1) + " of " + count);
+  return create_message("search","response", (elem_counter+1) + " of " + highlighted_elems.length);
 }
 
 /*
@@ -80,7 +77,7 @@ function iterate_text(info, callback) {
       case 1:
         if (exclude_elements.indexOf(node.tagName.toLowerCase()) > -1)
           return -1;
-        if (node.offsetParent == null)
+        if (is_hidden(node))
           return -1;
         break;
       case 3:
@@ -168,7 +165,7 @@ function collect_highlighted_elements() {
   	  if (node.nodeType != 1) return -1;
       if (exclude_elements.indexOf(node.tagName.toLowerCase()) > -1)
         return -1;
-      if (node.offsetParent == null) // invisible
+      if (is_hidden(node)) // invisible
         return -1;
       if (node.tagName.toLowerCase() == "mark" && node.getAttribute("class").indexOf("search-plus") > -1)
         return 1;
@@ -245,5 +242,22 @@ function remove_emphasis(node) {
 
 function scroll_to(node) {
   if (node == null) return;
-  node.scrollIntoView();
+  if (!is_in_view(node))
+    node.scrollIntoView();
+}
+
+function is_hidden(node) {
+  return node.offsetParent == null;
+}
+
+// copy paste from stackoverflow
+function is_in_view(elem)
+{
+    var docViewTop = $(window).scrollTop();
+    var docViewBottom = docViewTop + $(window).height();
+
+    var elemTop = $(elem).offset().top;
+    var elemBottom = elemTop + $(elem).height();
+
+    return ((elemBottom <= docViewBottom) && (elemTop >= docViewTop));
 }
