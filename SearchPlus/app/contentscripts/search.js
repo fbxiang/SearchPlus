@@ -242,8 +242,7 @@ function remove_emphasis(node) {
 
 function scroll_to(node) {
   if (node == null) return;
-  if (!is_in_view(node))
-    node.scrollIntoView();
+  node.scrollIntoViewIfNeeded(); // non-standard method
 }
 
 function is_hidden(node) {

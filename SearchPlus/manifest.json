@@ -1,9 +1,9 @@
 {
   "manifest_version": 2,
   "name"            : "SearchPlus",
-  "description"     : "Omnipotent(Maybe) Page Search Tool",
+  "description"     : "Omnipotent(Maybe) Page Search Tool. Now in testing, expect frequent updates",
   "short_name"      : "SearchPlus",
-  "version"         : "0.1",
+  "version"         : "pre-alpha-0.1",
  
   "browser_action": {
     "default_popup": "index.html",
