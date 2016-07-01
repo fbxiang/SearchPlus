@@ -5,6 +5,7 @@ var elem_counter = -1 // selected element
  * register listener for messages
  */
 chrome.runtime.onMessage.addListener(function(message, sender, sendResponse) {
+  if (sender.id !== chrome.runtime.id) return; // prevent interextension attack
   process_message(message, function(method, action, content){
     if (method == "search")// we only listen to search message
     {
@@ -16,7 +17,14 @@ chrome.runtime.onMessage.addListener(function(message, sender, sendResponse) {
     }
     else if (method == "code") {
       // eval evaluates the code
-      sendResponse(create_message("code", "response", eval(content)));
+      var result;
+      try {
+        result = eval(content);
+      }
+      catch(err) {
+        result = err.message;
+      }
+      sendResponse(create_message("code", "response", result));
     }
     sendResponse(create_message("Unknown","None","None"));
   });
@@ -36,7 +44,7 @@ function process(keyword, action) {
     case "multi":
       remove_highlight();
       reset_counter();
-      keywords = keyword.split(" ");
+      var keywords = keyword.split(" ");
       colors = ["yellow", "aqua", "chartreuse", "Magenta", "orange"];
       for (var i = 0; i < keywords.length; i++) {
         highlight(keywords[i], colors[i%(colors.length)]);
@@ -45,10 +53,22 @@ function process(keyword, action) {
       emphasize_elem(next_elem());
       scroll_to(this_elem());
       break;
+    case "regex": 
+      remove_highlight();
+      reset_counter();
+      var regex = new RegExp(keyword, "i");
+      highlight(regex);
+      highlighted_elems = collect_highlighted_elements();
+      emphasize_elem(next_elem());
+      scroll_to(this_elem());
+      break;
     case "enter":
       remove_emphasis(this_elem());
       emphasize_elem(next_elem());
       scroll_to(this_elem());
+      break;
+    default:
+      break;
   }
   return create_message("search","response", (elem_counter+1) + " of " + highlighted_elems.length);
 }
@@ -99,18 +119,23 @@ function replace(source, target) {
 /* Add colored highlight to all target text 
  */
 function highlight(target, color) {
+  if (!target) return;
   color || (color = "yellow");
   if (target.length <= 0) return;
   var info = {count:0};
+  var regex = typeof target == "string" ? exact_regex(target) : target;
+  if (regex.test("")) return; // important!
   iterate_text(info, function(info, node){
     var pNode = node.parentNode;
-    var idx;
-    while ((idx = node.data.toLowerCase().indexOf(target.toLowerCase())) >= 0) {
+    var match;
+    while (match = node.data.match(regex)) {
+      var idx1 = match.index;
+      var idx2 = idx1 + match[0].length;
       info.count++;
       var text = node.data;
-      var textLeft = text.substring(0, idx);
-      var textRight = text.substring(idx+target.length);
-      var textMid = text.substring(idx, idx+target.length);
+      var textLeft = text.substring(0, idx1);
+      var textRight = text.substring(idx2);
+      var textMid = text.substring(idx1, idx2);
       var textNodeLeft = document.createTextNode(textLeft);
       var iNode = document.createElement("mark")
       var textNodeMid = document.createTextNode(textMid);
@@ -124,6 +149,16 @@ function highlight(target, color) {
   });
   return info.count;
 }
+
+function exact_regex(str, modifiers) {
+  modifiers || (modifiers = "i");
+  var result = "";
+  for (var i = 0; i < str.length; i++) {
+    result += "["+str[i]+"]";
+  }
+  return new RegExp(result, modifiers);
+}
+
 
 /* Iterate throught the document body
  * @param info            first argument of call back

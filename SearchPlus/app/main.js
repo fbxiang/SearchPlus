@@ -93,6 +93,12 @@ $(document).ready(function() {
             console.log("Search response received.");
           });
           break;
+        case MODE_REGEX:
+          message_current_tab(create_message("search", "regex", text), function(method, action, content){
+            display_hint(content, "grey");
+            console.log("Search response received.");
+          });
+          break;
       }
 
     }
@@ -337,13 +343,13 @@ MODE_MULTI = create_mode({
 
 MODE_CODE = create_mode({
   name: "code",
-  init: function(){
+  init: function() {
   	$("#textarea-container").css("height", "200px");
   },
-  quit: function(){
+  quit: function() {
   	$("#textarea-container").css("height", "42px");
   }
-})
+});
 
 function change_mode_to(mode) {
   console.assert(ModeInfo.hasOwnProperty(mode));
