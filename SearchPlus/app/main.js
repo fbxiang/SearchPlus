@@ -1,3 +1,7 @@
+(function() {
+
+
+
 /* Background page stuff */
 var background = chrome.extension.getBackgroundPage();
 /* initialize a counter which controls which history item to read. */
@@ -6,6 +10,7 @@ var history_counter = history_length();
 $(document).ready(function() {
   ModeInfo[get_mode()].init();
   set_search(background.search_text);
+  if (!is_cmd(background.search_text)) search(background.search_text);
 });
 
 /* detect up/down arrow is just pressed. if so, go over the history entries. */
@@ -56,7 +61,10 @@ $(document).ready(function(){
           });
           break;
         default:
-          message_current_tab(create_message("search", "enter", search_text), process_search_response);
+          if (!event.shiftKey)
+            message_current_tab(create_message("search", "next", search_text), process_search_response);
+          else
+            message_current_tab(create_message("search", "prev", search_text), process_search_response);
           break;
       }
       history_add(search_text);
@@ -78,33 +86,34 @@ $(document).ready(function() {
   $("#search-text").bind("input propertychange", function(event){
     clear_hint();
     var text = $("#search-text").val();
-    if (!is_cmd(text) && get_mode() != MODE_CODE){
-      console.log("Sending search request.");
-      switch (get_mode()) {
-        case MODE_NORMAL:
-          message_current_tab(create_message("search", "normal", text), function(method, action, content){
-            display_hint(content, "grey");
-            console.log("Search response received.");
-          });
-          break;
-        case MODE_MULTI:
-          message_current_tab(create_message("search", "multi", text), function(method, action, content){
-            display_hint(content, "grey");
-            console.log("Search response received.");
-          });
-          break;
-        case MODE_REGEX:
-          message_current_tab(create_message("search", "regex", text), function(method, action, content){
-            display_hint(content, "grey");
-            console.log("Search response received.");
-          });
-          break;
-      }
-
-    }
+    console.log("Sending search request.");
+    if (!is_cmd(text)) search(text);
     background.search_text = text;
   });
 });
+
+function search(text) {
+  switch (get_mode()) {
+    case MODE_NORMAL:
+      message_current_tab(create_message("search", "normal", text), function(method, action, content){
+        display_hint(content, "grey");
+        console.log("Search response received.");
+      });
+      break;
+    case MODE_MULTI:
+      message_current_tab(create_message("search", "multi", text), function(method, action, content){
+        display_hint(content, "grey");
+        console.log("Search response received.");
+      });
+      break;
+    case MODE_REGEX:
+      message_current_tab(create_message("search", "regex", text), function(method, action, content){
+        display_hint(content, "grey");
+         console.log("Search response received.");
+       });
+       break;
+  }
+}
 
 /* Working in progerss*/
 function process_search_response(method, action, content) {
@@ -283,6 +292,9 @@ var command_table = {
   "clear": function() {
     history_clear();
   },
+  "q": function() {
+    window.close();
+  },
   "default": function() {
     display_hint("no such command", "red");
   }
@@ -363,3 +375,9 @@ function change_mode_to(mode) {
 function get_mode() {
   return get_background_option("mode");
 }
+
+
+
+
+
+})();

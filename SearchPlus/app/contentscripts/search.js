@@ -1,3 +1,7 @@
+(function(){
+
+
+
 var highlighted_elems = [] // list for storing elements
 var elem_counter = -1 // selected element
 
@@ -62,9 +66,14 @@ function process(keyword, action) {
       emphasize_elem(next_elem());
       scroll_to(this_elem());
       break;
-    case "enter":
+    case "next":
       remove_emphasis(this_elem());
       emphasize_elem(next_elem());
+      scroll_to(this_elem());
+      break;
+    case "prev":
+      remove_emphasis(this_elem());
+      emphasize_elem(prev_elem());
       scroll_to(this_elem());
       break;
     default:
@@ -260,6 +269,12 @@ function next_elem() {
   return highlighted_elems[elem_counter];
 }
 
+function prev_elem() {
+  if (highlighted_elems.length == 0) return null;
+  elem_counter = (elem_counter-1+highlighted_elems.length) % highlighted_elems.length;
+  return highlighted_elems[elem_counter];
+}
+
 function this_elem() {
   if (highlighted_elems.length == 0) return null;
   return highlighted_elems[elem_counter];
@@ -295,3 +310,9 @@ function is_in_view(elem)
 
     return ((elemBottom <= docViewBottom) && (elemTop >= docViewTop));
 }
+
+
+
+
+
+})();
