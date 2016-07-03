@@ -1,7 +1,6 @@
 (function(){
 
 
-
 var highlighted_elems = [] // list for storing elements
 var elem_counter = -1 // selected element
 
@@ -76,6 +75,8 @@ function process(keyword, action) {
       emphasize_elem(prev_elem());
       scroll_to(this_elem());
       break;
+    case "click":
+      if (this_elem()) this_elem().click();
     default:
       break;
   }
@@ -310,9 +311,6 @@ function is_in_view(elem)
 
     return ((elemBottom <= docViewBottom) && (elemTop >= docViewTop));
 }
-
-
-
 
 
 })();

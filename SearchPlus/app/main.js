@@ -45,6 +45,11 @@ $(document).ready(function() {
  */
 $(document).ready(function(){
   $("#search-text").keypress(function(event) {
+    // ctrl+enter is pressed
+  	if (event.which == 10) {
+  	  message_current_tab(create_message("search", "click", ""));
+  	  clear_search();
+  	}
     // enter is pressed
     if (event.which == 13) {
       search_text = $("#search-text").val();
@@ -155,6 +160,7 @@ function display_hint(content, color) {
 /* Clear search area */
 function clear_search() {
   $("#search-text").val("");
+  background.search_text = "";
 }
 
 /* Set search area 
@@ -261,7 +267,8 @@ function create_message(method, action, content) {
  *                     Function that processes the message
  */
 function process_message(message, func) {
-  func(message._method, message._action, message._content);
+  if (func)
+    func(message._method, message._action, message._content);
 }
 
 /* Command lookup table*/ 
