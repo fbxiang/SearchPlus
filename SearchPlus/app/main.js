@@ -1,16 +1,19 @@
 (function() {
 
 
-
 /* Background page stuff */
 var background = chrome.extension.getBackgroundPage();
 /* initialize a counter which controls which history item to read. */
 var history_counter = history_length();
 
+chrome.storage.local.get("custom_commands", function(items) {
+  custom_command_table = items["custom_commands"];
+});
+
 $(document).ready(function() {
   ModeInfo[get_mode()].init();
   set_search(background.search_text);
-  if (!is_cmd(background.search_text)) search(background.search_text);
+  if (!is_cmd(background.search_text)) get_mode_info().onChange();
 });
 
 /* detect up/down arrow is just pressed. if so, go over the history entries. */
@@ -39,16 +42,12 @@ $(document).ready(function() {
   });
 });
 
-/*
- * [Search mode] when enter is pressed, send message {"search", "enter", search_text} to content script
- * [Code   mode] when enter is pressed, send message {"code," "enter", search_text}
- */
+
 $(document).ready(function(){
   $("#search-text").keypress(function(event) {
     // ctrl+enter is pressed
   	if (event.which == 10) {
-  	  message_current_tab(create_message("search", "click", ""));
-  	  clear_search();
+  	  get_mode_info().onCtrlEnter();
   	}
     // enter is pressed
     if (event.which == 13) {
@@ -57,24 +56,14 @@ $(document).ready(function(){
         process_cmd(search_text.substring(1));
         return false;
       }
-      switch (get_mode()) {
-        case MODE_CODE:
-          if (!event.shiftKey) return true;
-          message_current_tab(create_message("code", "enter", search_text), function(method, action, content) {
-            display_hint(content, "darkblue");
-            clear_search();
-          });
-          break;
-        default:
-          if (!event.shiftKey)
-            message_current_tab(create_message("search", "next", search_text), process_search_response);
-          else
-            message_current_tab(create_message("search", "prev", search_text), process_search_response);
-          break;
-      }
       history_add(search_text);
       history_set_counter();
-      return false;
+      if (event.shiftKey)
+        return get_mode_info().onShiftEnter();
+      else
+      {
+      	return get_mode_info().onEnter();
+      }
     }
     else {
       return true;
@@ -89,41 +78,17 @@ $(document).ready(function(){
  */
 $(document).ready(function() {
   $("#search-text").bind("input propertychange", function(event){
-    clear_hint();
-    var text = $("#search-text").val();
-    console.log("Sending search request.");
-    if (!is_cmd(text)) search(text);
-    background.search_text = text;
+  	clear_hint();
+  	var prev_text = background.search_text;
+  	var curr_text = background.search_text = get_text();
+  	if (is_cmd(get_text())) {
+  	  if (curr_text.length > prev_text.length)
+  	    cmd_autocomplete();
+  	  return;
+  	}
+    get_mode_info().onChange();
   });
 });
-
-function search(text) {
-  switch (get_mode()) {
-    case MODE_NORMAL:
-      message_current_tab(create_message("search", "normal", text), function(method, action, content){
-        display_hint(content, "grey");
-        console.log("Search response received.");
-      });
-      break;
-    case MODE_MULTI:
-      message_current_tab(create_message("search", "multi", text), function(method, action, content){
-        display_hint(content, "grey");
-        console.log("Search response received.");
-      });
-      break;
-    case MODE_REGEX:
-      message_current_tab(create_message("search", "regex", text), function(method, action, content){
-        display_hint(content, "grey");
-         console.log("Search response received.");
-       });
-       break;
-  }
-}
-
-/* Working in progerss*/
-function process_search_response(method, action, content) {
-  display_hint(content, "grey");
-}
 
 /*
   @param keyword    keyword typed in popup search bar
@@ -131,6 +96,41 @@ function process_search_response(method, action, content) {
 */
 function is_cmd(keyword) {
   return keyword[0] == '/';
+}
+
+function cmd_autocomplete() {
+  var text = get_text().substring(1);
+  if (!text) return;
+  var cmds = get_all_cmds().filter(x => x.indexOf(text)==0);
+  if (cmds.length) {
+  	set_search("/"+cmds[0]);
+    var start = text.length+1;
+    var end = cmds[0].length+1;
+    createSelection($("#search-text")[0], start, end);
+  }
+}
+
+function createSelection(field, start, end) {
+  if( field.createTextRange ) {
+    var selRange = field.createTextRange();
+    selRange.collapse(true);
+    selRange.moveStart('character', start);
+    selRange.moveEnd('character', end);
+    selRange.select();
+    field.focus();
+  } else if( field.setSelectionRange ) {
+    field.focus();
+    field.setSelectionRange(start, end);
+  } else if( typeof field.selectionStart != 'undefined' ) {
+    field.selectionStart = start;
+    field.selectionEnd = end;
+    field.focus();
+  }
+}
+
+
+function get_all_cmds() {
+  return Object.keys(command_table).concat(Object.keys(custom_command_table));
 }
 
 function process_cmd(keyword) {
@@ -145,7 +145,9 @@ function process_cmd(keyword) {
 function execute_cmd(words) {
   var name = words[0];
   if (command_table.hasOwnProperty(name))
-    command_table[name]();
+    command_table[name](words);
+  else if (custom_command_table.hasOwnProperty(name))
+  	eval(custom_command_table[name]);
   else
     command_table["default"]();
   clear_search();
@@ -302,20 +304,74 @@ var command_table = {
   "q": function() {
     window.close();
   },
+  "addcmd": function(words) {
+    if (words.length != 2) {
+      display_hint("invalid arguments", "red");
+      return;
+    }
+    var newcmd = words[1].toLowerCase();
+    if (newcmd=="" || !/[a-z]/i.test(newcmd[0])) {
+      display_hint("commands start with letter", "red");
+      return;
+    }
+    if (command_table.hasOwnProperty(newcmd)) {
+      display_hint("command already in use", "red");
+      return;
+    }
+    change_mode_to(MODE_ADD_CMD, words[1]);
+  },
+  "rmcmd": function(words) {
+    if (words.length != 2) {
+      display_hint("invalid arguments", "red");
+      return;
+    }
+    var cmd = words[1].toLowerCase();
+    if (!custom_command_table.hasOwnProperty(cmd)) {
+      display_hint("no such command", "red");
+      return;
+    }
+    rmcmd(cmd);
+  },
   "default": function() {
     display_hint("no such command", "red");
   }
 }
 
+var custom_command_table = {}
+
+function addcmd(name, code) {
+  custom_command_table[name] = code;
+  chrome.storage.local.set({"custom_commands":custom_command_table});
+}
+
+function rmcmd(name) {
+  if (custom_command_table.hasOwnProperty(name)) {
+  	delete custom_command_table[name];
+  	chrome.storage.local.set({"custom_commands":custom_command_table});
+  }
+}
+
+function search_next() {
+  message_current_tab(create_message("search", "next", search_text), function(method, action, content){
+  	display_hint(content, "grey");
+  });
+  return false;
+}
+function search_prev() {
+  message_current_tab(create_message("search", "prev", search_text), function(method, action, content){
+  	display_hint(content, "grey");
+  });
+  return false;
+}
+function search_click() {
+  message_current_tab(create_message("search", "click", ""));
+  clear_search();
+  return false;
+}
+
+
 Mode_Count = 0;
 ModeInfo = {};
-
-MODE_DEFAULT = {
-  id: -1,
-  name: "",
-  init: function(){},
-  quit: function(){},
-}
 
 /* Create a mode. Each mode will be assigned an id
  * @param options     a list, "name" property is required,
@@ -331,33 +387,62 @@ function create_mode(options) {
   	console.log("Create Mode Failed");
   	return;
   }
-  if (options.hasOwnProperty("init")) {
-    mode.init = options.init;
-  }
-  else {
-    mode.init = MODE_DEFAULT.init;
-  }
-  if (options.hasOwnProperty("quit")) {
-    mode.quit = options.quit;
-  }
-  else {
-  	mode.quit = MODE_DEFAULT.quit;
-  }
+  ["init", "quit", "onEnter", "onShiftEnter", "onCtrlEnter", "onChange"].forEach(option=>{
+    if (options.hasOwnProperty(option)) mode[option] = options[option];
+    else mode[option] = function(){}
+  });
   mode.id = Mode_Count++; 
   ModeInfo[mode.id] = mode;
   return mode.id;
 }
 
 MODE_NORMAL = create_mode({
-  name: "normal"
+  name: "normal",
+  onChange: function() {
+    clear_hint();
+    var text = get_text();
+    console.log("Sending search request.");
+    message_current_tab(create_message("search", "normal", text), function(method, action, content){
+      display_hint(content, "grey");
+      console.log("Search response received.");
+    });
+    // background.search_text = text;
+  },
+  onEnter: search_next,
+  onShiftEnter: search_prev,
+  onCtrlEnter: search_click
 });
 
 MODE_REGEX = create_mode({
-  name: "regex"
+  name: "regex",
+  onChange: function() {
+    clear_hint();
+    var text = get_text();
+    console.log("Sending search request.");
+    message_current_tab(create_message("search", "regex", text), function(method, action, content){
+      display_hint(content, "grey");
+      console.log("Search response received.");
+    });
+  },
+  onEnter: search_next,
+  onShiftEnter: search_prev,
+  onCtrlEnter: search_click
 });
 
 MODE_MULTI = create_mode({
-  name: "multi"
+  name: "multi",
+  onChange: function() {
+    clear_hint();
+    var text = get_text();
+    console.log("Sending search request.");
+    message_current_tab(create_message("search", "multi", text), function(method, action, content){
+      display_hint(content, "grey");
+      console.log("Search response received.");
+    });
+  },
+  onEnter: search_next,
+  onShiftEnter: search_prev,
+  onCtrlEnter: search_click
 });
 
 MODE_CODE = create_mode({
@@ -367,21 +452,69 @@ MODE_CODE = create_mode({
   },
   quit: function() {
   	$("#textarea-container").css("height", "42px");
-  }
+  },
+  onEnter: function() {
+    return true;
+  },
+  onShiftEnter: function() {
+    message_current_tab(create_message("code", "enter", get_text()), function(method, action, content) {
+      display_hint(content, "darkblue");
+      clear_search();
+    });
+    return false;
+  },
 });
 
-function change_mode_to(mode) {
+MODE_ADD_CMD = create_mode({
+  name: "addcmd",
+  onShiftEnter: function() {
+    var newcmd = get_background_option("modemetadata");
+    addcmd(newcmd, get_text());
+    change_mode_to(MODE_MULTI);
+    clear_search();
+    return false;
+  },
+  init: function() {
+  	$("#textarea-container").css("height", "200px");
+  	$("body").css("background-color", "red");
+  },
+  quit: function() {
+  	$("#textarea-container").css("height", "42px");
+  	$("body").css("background-color", "lightblue");
+  }
+})
+
+function change_mode_to(mode, metadata) {
+  metadata || (metadata = "");
   console.assert(ModeInfo.hasOwnProperty(mode));
   pmode = get_background_option("mode");
   if (pmode == mode) return;
   ModeInfo[pmode].quit();
   set_background_option("mode", mode);
+  set_background_option("modemetadata", metadata);
   ModeInfo[mode].init();
 }
 
 function get_mode() {
   return get_background_option("mode");
 }
+function get_mode_metadata() {
+  return get_background_option("modemetadata");
+}
+
+function get_mode_info() {
+  return ModeInfo[get_mode()];
+}
+
+function get_text() {
+  return $("#search-text").val();
+}
+
+
+//---------------------------API
+
+
+
 
 
 

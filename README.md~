@@ -10,4 +10,6 @@ It is a chrome extension project in progress. I intend to privide easy and power
    Regex mode supports javascript style regular expressions, ignores regexs which accept "".
 4. In normal/multi/regex mode, press Enter to scroll over all elements, and Shift+Enter to scroll back. (Currently there maybe some hidden elements not detected as hidden)
 5. If current element selected can be clicked, Ctrl+Enter to click it.
+6. Custom command.(Example: "/addcmd mycmd" will change mode into command scripting, type code in and "Shift+Enter" to confirm. Later use "\mycmd" to execute)
+7. Command autocomplete
 
