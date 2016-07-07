@@ -68,9 +68,7 @@ $(document).ready(function(){
       if (event.shiftKey)
         return get_mode_info().onShiftEnter();
       else
-      {
       	return get_mode_info().onEnter();
-      }
     }
     else {
       return true;
@@ -283,6 +281,7 @@ function create_message(method, action, content) {
  *                     Function that processes the message
  */
 function process_message(message, func) {
+  if (message === _) return;
   if (func)
     func(message._method, message._action, message._content);
 }
