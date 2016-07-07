@@ -1,5 +1,6 @@
 (function() {
 
+var _ = undefined;
 
 /* Background page stuff */
 var background = chrome.extension.getBackgroundPage();
@@ -12,6 +13,7 @@ chrome.storage.local.get("custom_commands", function(items) {
 
 $(document).ready(function() {
   ModeInfo[get_mode()].init();
+  set_search_hint(ModeInfo[get_mode()].name);
   set_search(background.search_text);
   if (!is_cmd(background.search_text)) get_mode_info().onChange();
 });
@@ -23,14 +25,18 @@ $(document).ready(function(){
   $("#search-text").keydown(function(event) {
     if (event.which == 38 && upkey == 0) {
       upkey = 1;
-      if (get_mode() != MODE_CODE || event.shiftKey)
+      if ( (get_mode() != MODE_CODE && get_mode() != MODE_GET_TEXT) || event.shiftKey)
         set_search(history_back());
     }
-    if (event.which == 40 && downkey == 0) {
+    else if (event.which == 40 && downkey == 0) {
       downkey = 1;
-      if (get_mode() != MODE_CODE || event.shiftKey)
+      if ( (get_mode() != MODE_CODE && get_mode() != MODE_GET_TEXT) || event.shiftKey)
         set_search(history_forward());
-    };
+    }
+    else if (event.which == 9) { // tab
+      deselectAll();
+      return false;
+    }
   });
 });
 
@@ -53,11 +59,12 @@ $(document).ready(function(){
     if (event.which == 13) {
       search_text = $("#search-text").val();
       if (is_cmd(search_text)) {
+        history_add(search_text);
+        history_set_counter();
+      	clear_search();
         process_cmd(search_text.substring(1));
         return false;
       }
-      history_add(search_text);
-      history_set_counter();
       if (event.shiftKey)
         return get_mode_info().onShiftEnter();
       else
@@ -128,6 +135,10 @@ function createSelection(field, start, end) {
   }
 }
 
+function deselectAll() {
+  var text = $("#search-text").val();
+  createSelection($("#search-text")[0], text.length, text.length);
+}
 
 function get_all_cmds() {
   return Object.keys(command_table).concat(Object.keys(custom_command_table));
@@ -150,7 +161,6 @@ function execute_cmd(words) {
   	eval(custom_command_table[name]);
   else
     command_table["default"]();
-  clear_search();
 }
 
 /* Show hint in the right of search area */
@@ -175,6 +185,10 @@ function set_search(item) {
 /* clear hint displayed in the right of the search area */
 function clear_hint() {
   $("#search-hint").text("");
+}
+
+function set_search_hint(text) {
+  $("#mode-hint").text(text);
 }
 
 /* Add search history to background page */
@@ -295,9 +309,6 @@ var command_table = {
   	change_mode_to(MODE_CODE);
     display_hint("mode set", "green");
   },
-  "mode": function() { 
-    alert(get_background_option("mode"));
-  },
   "clear": function() {
     history_clear();
   },
@@ -318,7 +329,28 @@ var command_table = {
       display_hint("command already in use", "red");
       return;
     }
-    change_mode_to(MODE_ADD_CMD, words[1]);
+    getLines(function(text){
+      addcmd(newcmd, text);
+    })
+  },
+  "editcmd": function(words) {
+    if (words.length != 2) {
+      display_hint("invalid arguments", "red");
+      return;
+    }
+    var cmd = words[1].toLowerCase();
+    if (cmd=="" || !/[a-z]/i.test(cmd[0])) {
+      display_hint("commands start with letter", "red");
+      return;
+    }
+    if (!custom_command_table.hasOwnProperty(cmd)) {
+      display_hint("no such command", "red");
+      return;
+    }
+    var cmdtext = custom_command_table[cmd];
+    getLines(cmdtext, function(text){
+      addcmd(cmd, text);
+    });
   },
   "rmcmd": function(words) {
     if (words.length != 2) {
@@ -338,6 +370,8 @@ var command_table = {
 }
 
 var custom_command_table = {}
+
+var custom_mode_table = {}
 
 function addcmd(name, code) {
   custom_command_table[name] = code;
@@ -396,6 +430,15 @@ function create_mode(options) {
   return mode.id;
 }
 
+function create_custom_mode(name) {
+  if (name == "") return;
+  mode = {};
+  mode.name = name;
+  mode.id = Mode_Count++; 
+  ModeInfo[mode.id] = mode;
+  return mode.id;
+}
+
 MODE_NORMAL = create_mode({
   name: "normal",
   onChange: function() {
@@ -406,7 +449,6 @@ MODE_NORMAL = create_mode({
       display_hint(content, "grey");
       console.log("Search response received.");
     });
-    // background.search_text = text;
   },
   onEnter: search_next,
   onShiftEnter: search_prev,
@@ -453,9 +495,6 @@ MODE_CODE = create_mode({
   quit: function() {
   	$("#textarea-container").css("height", "42px");
   },
-  onEnter: function() {
-    return true;
-  },
   onShiftEnter: function() {
     message_current_tab(create_message("code", "enter", get_text()), function(method, action, content) {
       display_hint(content, "darkblue");
@@ -465,24 +504,40 @@ MODE_CODE = create_mode({
   },
 });
 
-MODE_ADD_CMD = create_mode({
-  name: "addcmd",
+MODE_GET_TEXT = create_mode({
+  name: "gettext",
   onShiftEnter: function() {
-    var newcmd = get_background_option("modemetadata");
-    addcmd(newcmd, get_text());
-    change_mode_to(MODE_MULTI);
+    var callback = get_mode_metadata();
+    var text = get_text();
     clear_search();
+    change_mode_to(get_background_option("prevmode"));
+    callback(text);
     return false;
   },
   init: function() {
-  	$("#textarea-container").css("height", "200px");
-  	$("body").css("background-color", "red");
+    $("#textarea-container").css("height", "200px");
+    $("body").css("background-color", "green");
   },
   quit: function() {
   	$("#textarea-container").css("height", "42px");
   	$("body").css("background-color", "lightblue");
   }
-})
+});
+
+function getLines(opt_text, callback) {
+  if (opt_text === _) return;
+  if (callback === _) {
+  	callback = opt_text;
+  	opt_text = "";
+  }
+  set_search(opt_text);
+  set_background_option("prevmode", get_mode());
+  change_mode_to(MODE_GET_TEXT, callback);
+}
+
+function setLines(text) {
+  set_search(text);
+}
 
 function change_mode_to(mode, metadata) {
   metadata || (metadata = "");
@@ -493,6 +548,7 @@ function change_mode_to(mode, metadata) {
   set_background_option("mode", mode);
   set_background_option("modemetadata", metadata);
   ModeInfo[mode].init();
+  set_search_hint(ModeInfo[mode].name);
 }
 
 function get_mode() {
@@ -506,17 +562,13 @@ function get_mode_info() {
   return ModeInfo[get_mode()];
 }
 
+function set_mode_attr(mode, key, value) {
+  ModeInfo[mode][key] = value;
+}
+
 function get_text() {
   return $("#search-text").val();
 }
-
-
-//---------------------------API
-
-
-
-
-
 
 
 
