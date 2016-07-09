@@ -109,6 +109,7 @@ function cmd_autocomplete() {
   var text = get_text().substring(1);
   if (!text) return;
   var cmds = get_all_cmds().filter(x => x.indexOf(text)==0);
+  cmds = cmds.sort(w=>-w.length);
   if (cmds.length) {
   	set_search("/"+cmds[0]);
     var start = text.length+1;
@@ -335,7 +336,7 @@ command_table["q"] = function() {
 }
 
 help_table["addcmd"] = "Add new command. Usage: /addcmd [cmdName]. This will change mode to getText. Type code and Shift+Enter to store for later execution.";
-command_table["addcmd"] = function() {
+command_table["addcmd"] = function(words) {
   if (words.length != 2) {
     display_hint("invalid arguments", "red");
     return;
