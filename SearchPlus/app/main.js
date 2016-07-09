@@ -1,6 +1,8 @@
 (function() {
 
-var _ = undefined;
+var _ = undefined; // for quick reference
+
+var help_table = {}; // table to store all help info
 
 /* Background page stuff */
 var background = chrome.extension.getBackgroundPage();
@@ -288,83 +290,117 @@ function process_message(message, func) {
 
 /* Command lookup table*/ 
 var command_table = {
-  "test": function() {
-    alert("test"); 
-    display_hint("success", "green");
-  },
-  "normal": function() { 
-	change_mode_to(MODE_NORMAL);
-    display_hint("mode set", "green");
-  },
-  "regex": function() { 
-    change_mode_to(MODE_REGEX);
-    display_hint("mode set", "green");
-  },
-  "multi": function() { 
-  	change_mode_to(MODE_MULTI);
-    display_hint("mode set", "green");
-  },
-  "code": function() { 
-  	change_mode_to(MODE_CODE);
-    display_hint("mode set", "green");
-  },
-  "clear": function() {
-    history_clear();
-  },
-  "q": function() {
-    window.close();
-  },
-  "addcmd": function(words) {
-    if (words.length != 2) {
-      display_hint("invalid arguments", "red");
-      return;
-    }
-    var newcmd = words[1].toLowerCase();
-    if (newcmd=="" || !/[a-z]/i.test(newcmd[0])) {
-      display_hint("commands start with letter", "red");
-      return;
-    }
-    if (command_table.hasOwnProperty(newcmd)) {
-      display_hint("command already in use", "red");
-      return;
-    }
-    getLines(function(text){
-      addcmd(newcmd, text);
-    })
-  },
-  "editcmd": function(words) {
-    if (words.length != 2) {
-      display_hint("invalid arguments", "red");
-      return;
-    }
-    var cmd = words[1].toLowerCase();
-    if (cmd=="" || !/[a-z]/i.test(cmd[0])) {
-      display_hint("commands start with letter", "red");
-      return;
-    }
-    if (!custom_command_table.hasOwnProperty(cmd)) {
-      display_hint("no such command", "red");
-      return;
-    }
-    var cmdtext = custom_command_table[cmd];
-    getLines(cmdtext, function(text){
-      addcmd(cmd, text);
-    });
-  },
-  "rmcmd": function(words) {
-    if (words.length != 2) {
-      display_hint("invalid arguments", "red");
-      return;
-    }
-    var cmd = words[1].toLowerCase();
-    if (!custom_command_table.hasOwnProperty(cmd)) {
-      display_hint("no such command", "red");
-      return;
-    }
-    rmcmd(cmd);
-  },
   "default": function() {
     display_hint("no such command", "red");
+  }
+};
+
+command_table["test"] = function() {
+  alert("test"); 
+  display_hint("success", "green");
+}
+
+help_table["normal"] = "Normal search mode. Highlight exact match (not case sensitive).";
+command_table["normal"] = function() {
+  change_mode_to(MODE_NORMAL);
+  display_hint("mode set", "green");
+}
+
+help_table["regex"] = "Regular expression mode. Highlight using javascript normal expressions.";
+command_table["regex"] = function() {
+  change_mode_to(MODE_REGEX);
+  display_hint("mode set", "green");
+}
+
+help_table["multi"] = "Multiple words mode. Highlight different words separated by space.";
+command_table["multi"] = function() {
+  change_mode_to(MODE_MULTI);
+  display_hint("mode set", "green");
+}
+
+help_table["code"] = "Code mode. Run javascript code on content page, jquery supported.";
+command_table["code"] = function() { 
+  change_mode_to(MODE_CODE);
+  display_hint("mode set", "green");
+}
+
+help_table["clear"] = "Clear command/search history.";
+command_table["clear"] = function() {
+  history_clear();
+}
+
+help_table["q"] = "Quit pop up."
+command_table["q"] = function() {
+  window.close();
+}
+
+help_table["addcmd"] = "Add new command. Usage: /addcmd [cmdName]. This will change mode to getText. Type code and Shift+Enter to store for later execution.";
+command_table["addcmd"] = function() {
+  if (words.length != 2) {
+    display_hint("invalid arguments", "red");
+    return;
+  }
+  var newcmd = words[1].toLowerCase();
+  if (newcmd=="" || !/[a-z]/i.test(newcmd[0])) {
+    display_hint("commands start with letter", "red");
+    return;
+  }
+  if (command_table.hasOwnProperty(newcmd)) {
+    display_hint("command already in use", "red");
+    return;
+  }
+  getLines(function(text){
+    addcmd(newcmd, text);
+  });
+}
+
+help_table["editcmd"] = "Edit custom command. Usage: /editcmd [cmdName]. See usage of /addcmd."
+command_table["editcmd"] = function(words) {
+  if (words.length != 2) {
+    display_hint("invalid arguments", "red");
+    return;
+  }
+  var cmd = words[1].toLowerCase();
+  if (cmd=="" || !/[a-z]/i.test(cmd[0])) {
+    display_hint("commands start with letter", "red");
+    return;
+  }
+  if (!custom_command_table.hasOwnProperty(cmd)) {
+    display_hint("no such command", "red");
+    return;
+  }
+  var cmdtext = custom_command_table[cmd];
+  getLines(cmdtext, function(text){
+    addcmd(cmd, text);
+  });
+}
+
+help_table["rmcmd"] = "Delete custom command.";
+command_table["rmcmd"] = function() {
+  if (words.length != 2) {
+    display_hint("invalid arguments", "red");
+    return;
+  }
+  var cmd = words[1].toLowerCase();
+  if (!custom_command_table.hasOwnProperty(cmd)) {
+    display_hint("no such command", "red");
+    return;
+  }
+  rmcmd(cmd);
+}
+
+help_table["help"] = "Usage: /help [cmdName]."
+command_table["help"] = function(words) {
+  if (words.length == 1) { // only help is typed
+    alert("usage: /help [cmd]\navailable cmds: " + Object.keys(help_table));
+  }
+  else if (words.length == 2) {
+  	if (help_table.hasOwnProperty(words[1])) {
+  	  alert(help_table[words[1]]);
+  	}
+  	else {
+  	  display_hint(words[1]+" not found", "red");
+  	}
   }
 }
 
@@ -523,7 +559,11 @@ MODE_GET_TEXT = create_mode({
   }
 });
 
-function getLines(opt_text, callback) {
+/*
+ * getLines function could be placed inside the callback function
+ * but may cause issues
+ */
+function getLines(opt_text, callback) { 
   if (opt_text === _) return;
   if (callback === _) {
   	callback = opt_text;
