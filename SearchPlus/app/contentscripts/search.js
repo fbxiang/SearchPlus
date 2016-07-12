@@ -116,7 +116,6 @@ function iterate_text(info, callback) {
     }
     return 0;
   }, callback);
-
 }
 
 function replace(source, target) {
@@ -311,8 +310,4 @@ function is_in_view(elem)
 
     return ((elemBottom <= docViewBottom) && (elemTop >= docViewTop));
 }
-
-
-
-
 })();
