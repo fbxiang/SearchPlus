@@ -20,6 +20,10 @@ $(document).ready(function() {
   if (!is_cmd(background.search_text)) get_mode_info().onChange();
 });
 
+$(document).ready(function() {
+  ModeInfo[get_mode()].onLoad();
+});
+
 /* detect up/down arrow is just pressed. if so, go over the history entries. */
 var upkey = 0;
 var downkey = 0;
@@ -78,14 +82,8 @@ $(document).ready(function(){
   });
 });
 
-/*
- * when text is typed into the search bar
- * send message {"search, "text", text} to content script
- * 
- */
-$(document).ready(function() {
-  $("#search-text").bind("input propertychange", function(event){
-  	clear_hint();
+function on_search_change(event) {
+  clear_hint();
   	var prev_text = background.search_text;
   	var curr_text = background.search_text = get_text();
   	if (is_cmd(get_text())) {
@@ -94,8 +92,15 @@ $(document).ready(function() {
   	  return;
   	}
     get_mode_info().onChange();
-  });
-});
+}
+
+/*
+ * when text is typed into the search bar
+ * send message {"search, "text", text} to content script
+ * 
+ */
+$(document).ready(function() {
+  $("#search-text").bind("input propertychange", on_search_change)});
 
 /*
   @param keyword    keyword typed in popup search bar
@@ -111,7 +116,7 @@ function cmd_autocomplete() {
   var cmds = get_all_cmds().filter(x => x.indexOf(text)==0);
   cmds = cmds.sort(w=>-w.length);
   if (cmds.length) {
-  	set_search("/"+cmds[0]);
+  	$("#search-text").val("/"+cmds[0]);
     var start = text.length+1;
     var end = cmds[0].length+1;
     createSelection($("#search-text")[0], start, end);
@@ -181,6 +186,7 @@ function clear_search() {
  */
 function set_search(item) {
   $("#search-text").val(item);
+  on_search_change();
 }
 
 /* clear hint displayed in the right of the search area */
@@ -377,7 +383,7 @@ command_table["editcmd"] = function(words) {
 }
 
 help_table["rmcmd"] = "Delete custom command.";
-command_table["rmcmd"] = function() {
+command_table["rmcmd"] = function(words) {
   if (words.length != 2) {
     display_hint("invalid arguments", "red");
     return;
@@ -457,7 +463,7 @@ function create_mode(options) {
   	console.log("Create Mode Failed");
   	return;
   }
-  ["init", "quit", "onEnter", "onShiftEnter", "onCtrlEnter", "onChange"].forEach(option=>{
+  ["init", "quit", "onEnter", "onShiftEnter", "onCtrlEnter", "onChange", "onLoad"].forEach(option=>{
     if (options.hasOwnProperty(option)) mode[option] = options[option];
     else mode[option] = function(){}
   });
@@ -557,6 +563,10 @@ MODE_GET_TEXT = create_mode({
   quit: function() {
   	$("#textarea-container").css("height", "42px");
   	$("body").css("background-color", "lightblue");
+  },
+  onLoad: function() {
+    clear_search();
+    change_mode_to(get_background_option("prevmode"));
   }
 });
 
@@ -610,6 +620,24 @@ function get_text() {
   return $("#search-text").val();
 }
 
+function openURL(text) {
+  chrome.tabs.create({url: text});
+}
 
+function openWindows(url_list) {
+  n_windows = url_list.length;
+  screen_width = screen.width;
+  screen_height = screen.height;
+  window_width = (screen_width / n_windows) >> 0; // integer division
+  window_height = screen_height;
+  for (var i = 0; i < n_windows; i++) {
+    var u = url_list[i].trim();
+  	if (u.indexOf("http") != 0) {
+      u = "http://" + u;
+    }
+    chrome.windows.create({url: u, width: window_width, height: window_height,
+                                   left: window_width*i, top: 0});
+  }
+}
 
 })();
