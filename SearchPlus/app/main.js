@@ -161,9 +161,9 @@ function process_cmd(keyword) {
 
 function execute_cmd(words) {
   var name = words[0];
-  if (command_table.hasOwnProperty(name))
+  if (name in command_table)
     command_table[name](words);
-  else if (custom_command_table.hasOwnProperty(name))
+  else if (name in custom_command_table)
   	eval(custom_command_table[name]);
   else
     command_table["default"]();
@@ -352,7 +352,7 @@ command_table["addcmd"] = function(words) {
     display_hint("commands start with letter", "red");
     return;
   }
-  if (command_table.hasOwnProperty(newcmd)) {
+  if (newcmd in command_table) {
     display_hint("command already in use", "red");
     return;
   }
@@ -372,7 +372,7 @@ command_table["editcmd"] = function(words) {
     display_hint("commands start with letter", "red");
     return;
   }
-  if (!custom_command_table.hasOwnProperty(cmd)) {
+  if (! (cmd in custom_command_table)) {
     display_hint("no such command", "red");
     return;
   }
@@ -389,7 +389,7 @@ command_table["rmcmd"] = function(words) {
     return;
   }
   var cmd = words[1].toLowerCase();
-  if (!custom_command_table.hasOwnProperty(cmd)) {
+  if (!(cmd in custom_command_table)) {
     display_hint("no such command", "red");
     return;
   }
@@ -411,6 +411,23 @@ command_table["help"] = function(words) {
   }
 }
 
+command_table["exportcmds"] = function(words) {
+  var commands_json = JSON.stringify(custom_command_table);
+  download("cmds.txt", commands_json);
+}
+
+command_table["importcmds"] = function(words) {
+  chrome.tabs.create({'url': chrome.extension.getURL('html/import.html')}, function(tab) {});
+}
+
+function download(filename, text) {
+  var pom = document.createElement('a');
+  pom.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(text));
+  pom.setAttribute('download', filename);
+  pom.click();
+}
+
+
 var custom_command_table = {}
 
 var custom_mode_table = {}
@@ -421,7 +438,7 @@ function addcmd(name, code) {
 }
 
 function rmcmd(name) {
-  if (custom_command_table.hasOwnProperty(name)) {
+  if (name in custom_command_table) {
   	delete custom_command_table[name];
   	chrome.storage.local.set({"custom_commands":custom_command_table});
   }
@@ -456,7 +473,7 @@ ModeInfo = {};
  */
 function create_mode(options) {
   mode = {};
-  if (options.hasOwnProperty("name")) {
+  if ("name" in options) {
     mode.name = options.name;
   }
   else {
@@ -464,7 +481,7 @@ function create_mode(options) {
   	return;
   }
   ["init", "quit", "onEnter", "onShiftEnter", "onCtrlEnter", "onChange", "onLoad"].forEach(option=>{
-    if (options.hasOwnProperty(option)) mode[option] = options[option];
+    if (option in options) mode[option] = options[option];
     else mode[option] = function(){}
   });
   mode.id = Mode_Count++; 
@@ -591,7 +608,7 @@ function setLines(text) {
 
 function change_mode_to(mode, metadata) {
   metadata || (metadata = "");
-  console.assert(ModeInfo.hasOwnProperty(mode));
+  console.assert(mode in ModeInfo);
   pmode = get_background_option("mode");
   if (pmode == mode) return;
   ModeInfo[pmode].quit();

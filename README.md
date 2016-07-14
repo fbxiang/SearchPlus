@@ -12,4 +12,5 @@ It is a chrome extension project in progress. I intend to privide easy and power
 5. If current element selected can be clicked, Ctrl+Enter to click it.
 6. Custom command.(Example: "/addcmd mycmd" will change mode into command scripting, type code in and "Shift+Enter" to confirm. Later use "\mycmd" to execute)
 7. Command autocomplete
+8. "/importcmds" and "/exportcmds" for custom commands sharing.
 
