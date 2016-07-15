@@ -10,7 +10,7 @@ var background = chrome.extension.getBackgroundPage();
 var history_counter = history_length();
 
 chrome.storage.local.get("custom_commands", function(items) {
-  custom_command_table = items["custom_commands"];
+  custom_command_table = items["custom_commands"] ? items["custom_commands"] : {};
 });
 
 $(document).ready(function() {
@@ -151,7 +151,7 @@ function get_all_cmds() {
 }
 
 function process_cmd(keyword) {
-  var words = keyword.split(" "); // TODO: handle commands with more then 1 argument
+  var words = keyword.trim().split(" "); // TODO: handle commands with more then 1 argument
   if (words.length == 0) {
     display_hint("Invalid Command", "red");
     return;
@@ -164,7 +164,10 @@ function execute_cmd(words) {
   if (name in command_table)
     command_table[name](words);
   else if (name in custom_command_table)
+  {
+    var args = words;
   	eval(custom_command_table[name]);
+  }
   else
     command_table["default"]();
 }

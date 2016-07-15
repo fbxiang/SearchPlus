@@ -13,8 +13,15 @@ $(document).ready(function() {
           	return;
           } 
         }
-        chrome.storage.local.set({"custom_commands":cmds});
-        window.close();
+        chrome.storage.local.get("custom_commands", function(items) {
+          all_cmds = items["custom_commands"];
+          if (!all_cmds) all_cmds = {};
+          for (cmd in cmds) {
+            all_cmds[cmd] = cmds[cmd];
+          }
+          chrome.storage.local.set({"custom_commands":all_cmds});
+          window.close();
+        });
       }
       catch(err) {
         alert("Invalid command file!!!");
