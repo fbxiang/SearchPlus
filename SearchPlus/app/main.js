@@ -4,14 +4,18 @@ var _ = undefined; // for quick reference
 
 var help_table = {}; // table to store all help info
 
+var custom_buttons = []; // buttons
+
+chrome.storage.local.get("custom_commands", function(items) {
+  custom_command_table = items["custom_commands"] ? items["custom_commands"] : {};
+});
+
 /* Background page stuff */
 var background = chrome.extension.getBackgroundPage();
 /* initialize a counter which controls which history item to read. */
 var history_counter = history_length();
 
-chrome.storage.local.get("custom_commands", function(items) {
-  custom_command_table = items["custom_commands"] ? items["custom_commands"] : {};
-});
+load_buttons();
 
 $(document).ready(function() {
   ModeInfo[get_mode()].init();
@@ -166,6 +170,50 @@ function execute_cmd(words) {
   else
     command_table["default"]();
 }
+
+/* -------------------------Button Logic-------------------------- */
+
+function create_button(name, cmd) {
+  return {name:name, cmd:cmd};
+}
+
+function store_buttons() {
+  chrome.storage.local.set({"custom_buttons": custom_buttons});
+}
+
+function load_buttons() {
+  chrome.storage.local.get("custom_buttons", function(items) {
+    custom_buttons = items["custom_buttons"] ? items["custom_buttons"] : [];
+    update_buttons();
+  });
+}
+
+function add_button(button) {
+  custom_buttons.push(button);
+  store_buttons();
+}
+
+function remove_buttons() {
+  custom_buttons = [];
+  store_buttons();
+}
+
+function update_buttons() {
+  var bc = $("#buttons-container")[0];
+  while (bc.firstChild) {
+    bc.removeChild(bc.firstChild);
+  }
+  custom_buttons.forEach(function(button) {
+    var b = document.createElement("button");
+    b.appendChild(document.createTextNode(button.name));
+    b.addEventListener("click", function(){execCMD(button.cmd);});
+    bc.appendChild(b);
+  });
+}
+
+
+/* ------------------------End Button Logic------------------------*/
+
 
 /* Show hint in the right of search area */
 function display_hint(content, color) {
@@ -409,6 +457,29 @@ command_table["help"] = function(words) {
   }
 }
 
+command_table["addbutton"] = function(words) {
+  if (words.length == 1) {
+    alert("usage: /addbutton [buttonName]");
+    return;
+  }
+  getLines(function(text) {
+    add_button(create_button(words[1], text));
+    update_buttons();
+  });
+}
+
+command_table["rmbutton"] = function(words) {
+  if (words.length == 1) {
+    getLines("remove all buttons? [Y/N]", function(text) {
+      text = text.toLowerCase();
+      if (text == "yes" || text == "y") {
+        remove_buttons();
+        update_buttons();
+      }
+    });
+  }
+} 
+
 command_table["exportcmds"] = function(words) {
   var commands_json = JSON.stringify(custom_command_table);
   download("cmds.txt", commands_json);
@@ -417,6 +488,7 @@ command_table["exportcmds"] = function(words) {
 command_table["importcmds"] = function(words) {
   chrome.tabs.create({'url': chrome.extension.getURL('html/import.html')}, function(tab) {});
 }
+
 
 function download(filename, text) {
   var pom = document.createElement('a');
@@ -596,6 +668,7 @@ function getLines(opt_text, callback) {
   	opt_text = "";
   }
   set_search(opt_text);
+  selectAll();
   set_background_option("prevmode", get_mode());
   change_mode_to(MODE_GET_TEXT, callback);
 }

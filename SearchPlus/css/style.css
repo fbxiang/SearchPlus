@@ -41,7 +41,8 @@ button {
   -moz-border-radius: 8px;
   -webkit-border-radius: 8px;
   border-radius: 8px;
-  position:relative;
+  width:33.3%;
+  /*position:relative;*/
 }
 
 button:focus {

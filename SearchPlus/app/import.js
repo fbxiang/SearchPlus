@@ -19,6 +19,7 @@ $(document).ready(function() {
           for (cmd in cmds) {
             all_cmds[cmd] = cmds[cmd];
           }
+          alert(JSON.stringify(all_cmds));
           chrome.storage.local.set({"custom_commands":all_cmds});
           window.close();
         });
