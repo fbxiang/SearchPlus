@@ -19,6 +19,7 @@ chrome.runtime.onMessage.addListener(function(message, sender, sendResponse) {
       return;
     }
     else if (method == "code") {
+      console.log("executing code: " + content);
       // eval evaluates the code
       var result;
       try {

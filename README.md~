@@ -13,4 +13,7 @@ It is a chrome extension project in progress. I intend to privide easy and power
 6. Custom command.(Example: "/addcmd mycmd" will change mode into command scripting, type code in and "Shift+Enter" to confirm. Later use "\mycmd" to execute)
 7. Command autocomplete
 8. "/importcmds" and "/exportcmds" for custom commands sharing.
+9. custom commands are now capable of manipulating page content
 
+## Notice
+This extension could run any code in any environment, which could cause security issues. Continue to use if you are totally aware of your internet circumstances.

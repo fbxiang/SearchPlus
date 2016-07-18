@@ -141,17 +141,12 @@ function createSelection(field, start, end) {
   }
 }
 
-function deselectAll() {
-  var text = $("#search-text").val();
-  createSelection($("#search-text")[0], text.length, text.length);
-}
-
 function get_all_cmds() {
   return Object.keys(command_table).concat(Object.keys(custom_command_table));
 }
 
 function process_cmd(keyword) {
-  var words = keyword.trim().split(" "); // TODO: handle commands with more then 1 argument
+  var words = keyword.trim().split(" ");
   if (words.length == 0) {
     display_hint("Invalid Command", "red");
     return;
@@ -658,6 +653,28 @@ function openWindows(url_list) {
     chrome.windows.create({url: u, width: window_width, height: window_height,
                                    left: window_width*i, top: 0});
   }
+}
+
+// execute code in content script
+function exec(code) {
+  message_current_tab(create_message("code", "enter", code), function(method, action, content) {
+    display_hint(content, "darkblue");
+  });
+}
+
+function execCMD(cmdstr) {
+  var words = cmdstr.trim().split(" ");
+  execute_cmd(words);
+}
+
+function deselectAll() {
+  var text = $("#search-text").val();
+  createSelection($("#search-text")[0], text.length, text.length);
+}
+
+function selectAll() {
+  var text = $("#search-text").val();
+  createSelection($("#search-text")[0], 0, text.length);
 }
 
 })();
