@@ -198,17 +198,32 @@ function remove_buttons() {
   store_buttons();
 }
 
+function remove_button(idx) {
+  custom_buttons.splice(idx, 1);
+  store_buttons();
+}
+
+function change_button(idx, name, cmd) {
+  custom_buttons[idx].name = name;
+  custom_buttons[idx].cmd = cmd;
+  store_buttons();
+}
+
 function update_buttons() {
   var bc = $("#buttons-container")[0];
   while (bc.firstChild) {
     bc.removeChild(bc.firstChild);
   }
-  custom_buttons.forEach(function(button) {
+  custom_buttons.forEach(function(button, idx) {
     var b = document.createElement("button");
-    b.appendChild(document.createTextNode(button.name));
+    b.appendChild(document.createTextNode(idx+1 + ". " + button.name));
     b.addEventListener("click", function(){execCMD(button.cmd);});
     bc.appendChild(b);
   });
+}
+
+function num_buttons() {
+  return custom_buttons.length;
 }
 
 
@@ -469,16 +484,50 @@ command_table["addbutton"] = function(words) {
 }
 
 command_table["rmbutton"] = function(words) {
-  if (words.length == 1) {
-    getLines("remove all buttons? [Y/N]", function(text) {
-      text = text.toLowerCase();
-      if (text == "yes" || text == "y") {
-        remove_buttons();
-        update_buttons();
+  switch (words.length) {
+    case 1:
+      getLines("remove all buttons? [Y/N]", function(text) {
+        text = text.toLowerCase();
+        if (text == "yes" || text == "y") {
+          remove_buttons();
+          update_buttons();
+        }
+      });
+      break;
+    case 2:
+      var idx = parseInt(words[1])-1;
+      if (isNaN(idx) || idx < 0 || idx > custom_buttons.length) {
+        return;
       }
-    });
+      remove_button(idx);
+      update_buttons();
+      break;
+    default:
+      break;
   }
-} 
+}
+
+command_table["editbutton"] = function(words) {
+  switch (words.length) {
+    case 1:
+    case 2:
+      alert("usage: /editbutton [buttonNumber] [buttonName]");
+      break;
+    case 3:
+      var idx = parseInt(words[1])-1;
+      if (isNaN(idx) || idx < 0 || idx > custom_buttons.length) {
+        return;
+      }
+      var b = custom_buttons[idx];
+      getLines(b.cmd, function(text) {
+        change_button(idx, words[2], text);
+        update_buttons();
+      });
+      break;
+    default:
+      break;
+  }
+}
 
 command_table["exportcmds"] = function(words) {
   var commands_json = JSON.stringify(custom_command_table);
