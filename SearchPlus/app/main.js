@@ -250,6 +250,14 @@ function set_search(item) {
   on_search_change();
 }
 
+function set_prompt(text) {
+  $("#search-prompt").text(text);
+}
+
+function clear_prompt() {
+  $("#search-prompt").text("");
+}
+
 /* clear hint displayed in the right of the search area */
 function clear_hint() {
   $("#search-hint").text("");
@@ -419,7 +427,7 @@ command_table["addcmd"] = function(words) {
   }
   getLines(function(text){
     addcmd(newcmd, text);
-  });
+  }, "Enter javascript, Shift+Enter to submit.");
 }
 
 help_table["editcmd"] = "Edit custom command. Usage: /editcmd [cmdName]. See usage of /addcmd."
@@ -438,9 +446,9 @@ command_table["editcmd"] = function(words) {
     return;
   }
   var cmdtext = custom_command_table[cmd];
-  getLines(cmdtext, function(text){
+  getLines(function(text){
     addcmd(cmd, text);
-  });
+  }, "Change javascript, Shift+Enter to submit.", cmdtext);
 }
 
 help_table["rmcmd"] = "Delete custom command.";
@@ -480,19 +488,19 @@ command_table["addbutton"] = function(words) {
   getLines(function(text) {
     add_button(create_button(words[1], text));
     update_buttons();
-  });
+  }, "Add command to execute by the button, Shift+Enter to submit.");
 }
 
 command_table["rmbutton"] = function(words) {
   switch (words.length) {
     case 1:
-      getLines("remove all buttons? [Y/N]", function(text) {
+      getLines(function(text) {
         text = text.toLowerCase();
         if (text == "yes" || text == "y") {
           remove_buttons();
           update_buttons();
         }
-      });
+      }, "Yes/No.", "remove all buttons? [Y/N]");
       break;
     case 2:
       var idx = parseInt(words[1])-1;
@@ -519,10 +527,10 @@ command_table["editbutton"] = function(words) {
         return;
       }
       var b = custom_buttons[idx];
-      getLines(b.cmd, function(text) {
+      getLines(function(text) {
         change_button(idx, words[2], text);
         update_buttons();
-      });
+      }, "Change command for this button, Shift+Enter to submit.", b.cmd);
       break;
     default:
       break;
@@ -694,11 +702,12 @@ MODE_GET_TEXT = create_mode({
   },
   init: function() {
     $("#textarea-container").css("height", "200px");
-    $("body").css("background-color", "green");
+    $("body").css("background-color", "forestgreen");
   },
   quit: function() {
   	$("#textarea-container").css("height", "42px");
   	$("body").css("background-color", "lightblue");
+    clear_prompt();
   },
   onLoad: function() {
     clear_search();
@@ -710,13 +719,12 @@ MODE_GET_TEXT = create_mode({
  * getLines function could be placed inside the callback function
  * but may cause issues
  */
-function getLines(opt_text, callback) { 
-  if (opt_text === _) return;
-  if (callback === _) {
-  	callback = opt_text;
-  	opt_text = "";
-  }
-  set_search(opt_text);
+function getLines(callback, prompt, text) {
+  if (callback === _) return;
+  prompt || (prompt = "");
+  text || (text = "");
+  set_search(text);
+  set_prompt(prompt);
   selectAll();
   set_background_option("prevmode", get_mode());
   change_mode_to(MODE_GET_TEXT, callback);
