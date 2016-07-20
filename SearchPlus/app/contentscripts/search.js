@@ -120,6 +120,7 @@ function iterate_text(info, callback) {
 }
 
 function replace(source, target) {
+  if (!source || !target) return;
   iterate_text(null, function(info, node){
   	var pNode = node.parentNode;
     node.data = node.data.replace(RegExp(source,'i'), target);
