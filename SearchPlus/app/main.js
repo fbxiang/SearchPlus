@@ -160,6 +160,13 @@ function process_cmd(keyword) {
 
 function execute_cmd(words) {
   var name = words[0];
+  
+  // Case 1: name is a number
+  var num = parseInt(name)-1;
+  if (!isNaN(num) && num>=0 && num<num_buttons()) {
+    click_button(custom_buttons[num]);
+    return;
+  }
   if (name in command_table)
     command_table[name](words);
   else if (name in custom_command_table)
@@ -217,13 +224,17 @@ function update_buttons() {
   custom_buttons.forEach(function(button, idx) {
     var b = document.createElement("button");
     b.appendChild(document.createTextNode(idx+1 + ". " + button.name));
-    b.addEventListener("click", function(){execCMD(button.cmd);});
+    b.addEventListener("click", function(){click_button(button)});
     bc.appendChild(b);
   });
 }
 
 function num_buttons() {
   return custom_buttons.length;
+}
+
+function click_button(button) {
+  execCMD(button.cmd);
 }
 
 
