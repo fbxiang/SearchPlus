@@ -6,6 +6,8 @@ var help_table = {}; // table to store all help info
 
 var custom_buttons = []; // buttons
 
+custom_command_table = {};
+
 chrome.storage.local.get("custom_commands", function(items) {
   custom_command_table = items["custom_commands"] ? items["custom_commands"] : {};
 });
@@ -172,7 +174,7 @@ function execute_cmd(words) {
   else if (name in custom_command_table)
   {
     var args = words;
-  	eval(custom_command_table[name]);
+  	eval(custom_command_table[name][0]);
   }
   else
     command_table["default"]();
@@ -438,6 +440,9 @@ command_table["addcmd"] = function(words) {
   }
   getLines(function(text){
     addcmd(newcmd, text);
+    getLines(function(text) {
+      add_cmd_description(newcmd, text);
+    }, "Enter description for this cmd");
   }, "Enter javascript, Shift+Enter to submit.");
 }
 
@@ -456,9 +461,13 @@ command_table["editcmd"] = function(words) {
     display_hint("no such command", "red");
     return;
   }
-  var cmdtext = custom_command_table[cmd];
+  var cmdtext = custom_command_table[cmd][0];
+  var description = custom_command_table[cmd][1] ? custom_command_table[cmd][1] : "";
   getLines(function(text){
     addcmd(cmd, text);
+    getLines(function(text) {
+      add_cmd_description(cmd, text);
+    }, "Enter description for this cmd", description);
   }, "Change javascript, Shift+Enter to submit.", cmdtext);
 }
 
@@ -557,6 +566,9 @@ command_table["importcmds"] = function(words) {
   chrome.tabs.create({'url': chrome.extension.getURL('html/import.html')}, function(tab) {});
 }
 
+command_table["cmdlist"] = function(words) {
+  chrome.tabs.create({'url': chrome.extension.getURL('html/list.html')}, function(tab) {});
+};
 
 function download(filename, text) {
   var pom = document.createElement('a');
@@ -571,8 +583,16 @@ var custom_command_table = {}
 var custom_mode_table = {}
 
 function addcmd(name, code) {
-  custom_command_table[name] = code;
+  custom_command_table[name] = [];
+  custom_command_table[name].push(code);
   chrome.storage.local.set({"custom_commands":custom_command_table});
+}
+
+function add_cmd_description(name, text) {
+  if (name in custom_command_table) {
+    custom_command_table[name][1] = text;
+    chrome.storage.local.set({"custom_commands":custom_command_table});
+  }
 }
 
 function rmcmd(name) {
