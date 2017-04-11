@@ -407,6 +407,12 @@ command_table["multi"] = function() {
   display_hint("mode set", "green");
 }
 
+    help_table["nav"] = "Navigate through the page with keyboard only!";
+    command_table["nav"] = function() {
+        change_mode_to(MODE_NAV);
+        display_hint("mode set", "green");
+    };
+
 help_table["code"] = "Code mode. Run javascript code on content page, jquery supported.";
 command_table["code"] = function() { 
   change_mode_to(MODE_CODE);
@@ -703,6 +709,19 @@ MODE_MULTI = create_mode({
   onShiftEnter: search_prev,
   onCtrlEnter: search_click
 });
+
+    MODE_NAV = create_mode({
+        name: "nav",
+        onChange: function() {
+            clear_hint();
+            message_current_tab(create_message("search", "nav", get_text()), function(method, action, content) {
+                display_hint(content, "grey");
+            });
+        },
+        onEnter: search_next,
+        onShiftEnter: search_prev,
+        onCtrlEnter: search_click
+    });
 
 MODE_CODE = create_mode({
   name: "code",
