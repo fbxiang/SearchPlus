@@ -9,7 +9,7 @@ function setModeText(text) {
 }
 
 function setSearchText(text) {
-    $('#search-text').text(text);
+    $('#search-text').val(text);
 }
 
 function setSearchPrompt(text) {
@@ -18,6 +18,14 @@ function setSearchPrompt(text) {
 
 function getSearchText(text) {
     return $('#search-text').text();
+}
+
+function setSearchHint(text) {
+    return $('#search-hint').text(text);
+}
+
+function getSearchHint() {
+    return $('#search-hint').text();
 }
 
 function isCommand(text) {

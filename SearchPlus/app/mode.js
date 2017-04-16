@@ -40,6 +40,7 @@ class ModeSearch extends Mode {
             .sendToTab()
             .then(response => {
                 console.log('search response:', response);
+                setSearchHint(response);
             });
     }
 
@@ -48,6 +49,7 @@ class ModeSearch extends Mode {
             .sendToTab()
             .then(response => {
                 console.log('next response:', response);
+                setSearchHint(response);
             });
         return false;
     }
@@ -56,7 +58,19 @@ class ModeSearch extends Mode {
         new Message('post', 'prev')
             .sendToTab()
             .then(response => {
-                console.log('prev response:', response);
+                console.log('prev response', response);
+                setSearchHint(response);
+            });
+        return false;
+    }
+
+    onCtrlEnter() {
+        new Message('post', 'click')
+            .sendToTab()
+            .then(response => {
+                console.log('click response', response);
+                setSearchHint('');
+                setSearchText('');
             });
         return false;
     }
