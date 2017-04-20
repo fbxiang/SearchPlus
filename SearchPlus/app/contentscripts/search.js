@@ -5,12 +5,11 @@ var PostInterface = {
             return node.tagName.toLowerCase() == 'a' ||
                 window.getComputedStyle(node.firstChild.parentElement, null).cursor == 'pointer';
         });
-        nextElem();
+        bestElem();
         return `${nodeCounter + 1} of ${nodeList.length}`;
     },
     "next": () => {
         nextElem();
-        console.log(window.getComputedStyle(thisElem().parentElement, null));
         return `${nodeCounter + 1} of ${nodeList.length}`;
     },
     "prev": () => {
@@ -171,7 +170,16 @@ function highlight(target, color='yellow', condition=(node)=>true) {
             elements.push(iNode);
         }
     });
-    nodeList = elements;
+    nodeList = elements.sort((a, b) => {
+        let posA = elementPosition(a);
+        let posB = elementPosition(b);
+        let top1 = posA.top, left1 = posA.left;
+        let top2 = posB.top, left2 = posB.left;
+
+        if (top1 < top2 || (top1 == top2 && left1 < left2)) return -1;
+        if (top1 == top2 && left1 == left2) return 0;
+        return 1;
+    });
     resetCounter();
 }
 
@@ -293,6 +301,21 @@ function thisElem() {
     return nodeList[nodeCounter];
 }
 
+function bestElem() {
+    unmark(thisElem());
+    let i = 0;
+    for (; i < nodeList.length; i++) {
+        if (elementPosition(nodeList[i]).top >= window.pageYOffset){
+            break;
+        }
+    }
+    console.log(i);
+    nodeCounter = i;
+    mark(thisElem());
+    // scrollTo(thisElem());
+    return nodeList[nodeCounter];
+}
+
 function mark(node) {
     if (node) {
         node.style['border'] = '2px solid black';
@@ -317,22 +340,36 @@ function isHidden(node) {
 //     return node.offsetParent == null;
 // }
 
-// function elementInViewport(el) {
-//     var top = el.offsetTop;
-//     var left = el.offsetLeft;
-//     var width = el.offsetWidth;
-//     var height = el.offsetHeight;
+function elementPosition(el) {
+    let top = el.offsetTop;
+    let left = el.offsetLeft;
+    let width = el.offsetWidth;
+    let height = el.offsetHeight;
 
-//     while(el.offsetParent) {
-//         el = el.offsetParent;
-//         top += el.offsetTop;
-//         left += el.offsetLeft;
-//     }
+    while(el.offsetParent) {
+        el = el.offsetParent;
+        top += el.offsetTop;
+        left += el.offsetLeft;
+    }
+    return {top, left, width, height};
+}
 
-//     return (
-//         top >= window.pageYOffset &&
-//             left >= window.pageXOffset &&
-//             (top + height) <= (window.pageYOffset + window.innerHeight) &&
-//             (left + width) <= (window.pageXOffset + window.innerWidth)
-//     );
-// }
+function elementInViewport(el) {
+    var top = el.offsetTop;
+    var left = el.offsetLeft;
+    var width = el.offsetWidth;
+    var height = el.offsetHeight;
+
+    while(el.offsetParent) {
+        el = el.offsetParent;
+        top += el.offsetTop;
+        left += el.offsetLeft;
+    }
+
+    return (
+        top >= window.pageYOffset &&
+            left >= window.pageXOffset &&
+            (top + height) <= (window.pageYOffset + window.innerHeight) &&
+            (left + width) <= (window.pageXOffset + window.innerWidth)
+    );
+}
