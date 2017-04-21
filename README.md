@@ -7,3 +7,4 @@ It is a chrome extension project in progress. I intend to privide easy and power
 * Press `ESC` in nav mode will change the mode to `nav-esc` mode. Mode letter keys are disabled. Instead, use `hjkl` to navigate the webpage. `Enter`, `Shift+Enter`, `Ctrl+Enter` still work. Press `a` to go back to `nav` mode.
 * Type `/multi` then press `Enter` to change mode to multiple matching mode. This mode acts like a multiple keyword matching search.
 * `/code` to enter code mode. This mode evaludates javascript within the page. `Shift+Enter` to evaluate the code block. Be careful that dead loops and can freeze chrome.
+* `/tab [url]` to visit the page with this url. Please do not include the `http://` portion.
