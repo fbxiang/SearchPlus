@@ -40,7 +40,7 @@ class ModeRegistry {
 let modeRegistry = new ModeRegistry();
 let getModeById = id => modeRegistry.getMode(id);
 
-commandRegistry.register('url', function(url) {
+commandRegistry.register('tab', function(url) {
     if (!url[0])
         setSearchHint('invalid url');
     chrome.tabs.create({url: `http://${url[0]}`});
