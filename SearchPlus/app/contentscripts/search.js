@@ -312,7 +312,6 @@ function bestElem() {
     console.log(i);
     nodeCounter = i;
     mark(thisElem());
-    // scrollTo(thisElem());
     return nodeList[nodeCounter];
 }
 

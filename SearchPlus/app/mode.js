@@ -1,6 +1,5 @@
 class Mode {
     constructor(options) {
-        this.name = "";
     }
 
     onInit() {
@@ -32,7 +31,7 @@ class Mode {
     }
 }
 
-class ModeSearch extends Mode {
+class ModeNav extends Mode {
 
     onTextChange() {
         let text = $('#search-text').val();
@@ -76,3 +75,23 @@ class ModeSearch extends Mode {
     }
 }
 
+class ModeCode extends Mode {
+    onInit() {
+        $('#textarea-container').css('height', '200px');
+    }
+
+    onQuit() {
+        $('#textarea-container').css('height', '42px');
+    }
+
+    onShiftEnter() {
+        let text = $('#search-text').val();
+        new Message('post', 'code', text)
+            .sendToTab()
+            .then(response => {
+                setSearchText('');
+                setSearchHint(response);
+            });
+        return false;
+    }
+}

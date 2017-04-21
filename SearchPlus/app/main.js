@@ -2,7 +2,8 @@ let background = chrome.extension.getBackgroundPage();
 let setBackgroudModeId = id => {background.currentModeId = id;};
 let getBackgroundModeId = () => background.currentModeId;
 
-modeRegistry.register(new ModeSearch(), 'search');
+modeRegistry.register(new ModeNav(), 'nav');
+modeRegistry.register(new ModeCode(), 'code');
 
 function setModeText(text) {
     $('#mode-hint').text(text);
@@ -17,10 +18,11 @@ function setSearchPrompt(text) {
 }
 
 function getSearchText(text) {
-    return $('#search-text').text();
+    return $('#search-text').val();
 }
 
-function setSearchHint(text) {
+function setSearchHint(text, color='grey') {
+    $('#search-hint').css('color', color);
     return $('#search-hint').text(text);
 }
 
@@ -29,6 +31,7 @@ function getSearchHint() {
 }
 
 function isCommand(text) {
+    console.log(text);
     return text.trim().charAt(0) == '/';
 }
 
@@ -49,7 +52,7 @@ function changeModeTo(modeId) {
 
 $(document).ready(() => {
     if (getBackgroundModeId() === undefined) {
-        changeModeTo('search');
+        changeModeTo('nav');
     }
     else {
         changeModeTo(getBackgroundModeId());
@@ -65,7 +68,11 @@ $(document).ready(() => {
         case 13:
             let text = getSearchText();
             if (isCommand(text)) {
-                // run command here
+                text = text.trim().substring(1);
+                console.log('command:', text);
+                setSearchText();
+                getCommandById(text)();
+                return false;
             }
             else if (event.shiftKey) {
                 return getCurrentMode().onShiftEnter();
@@ -82,13 +89,10 @@ $(document).ready(() => {
 
 $(document).ready(function() {
     $("#search-text").bind("input propertychange", event => {
-        console.log('change!');
-        getCurrentMode().onTextChange();
+        if (!isCommand(getSearchText()))
+            getCurrentMode().onTextChange();
     });
 });
-
-
-
 
 
 
