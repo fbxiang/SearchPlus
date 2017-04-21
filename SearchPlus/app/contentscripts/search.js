@@ -1,10 +1,21 @@
 var PostInterface = {
-    "search": content => {
+    "nav": content => {
         removeHighlight();
-        highlight(content, 'yellow', node =>{
+        let elems = highlight(content, 'yellow', node =>{
             return node.tagName.toLowerCase() == 'a' ||
                 window.getComputedStyle(node.firstChild.parentElement, null).cursor == 'pointer';
         });
+        setNodeList(elems);
+        bestElem();
+        return `${nodeCounter + 1} of ${nodeList.length}`;
+    },
+    "multi": content => {
+        removeHighlight();
+        const colors = ['yellow', 'green', 'lightblue'];
+        let elems = content.split(' ').filter(x=>x!='').reduce((arr, elem, i) => {
+            return arr.concat(highlight(elem, colors[i%colors.length]));
+        }, []);
+        setNodeList(elems);
         bestElem();
         return `${nodeCounter + 1} of ${nodeList.length}`;
     },
@@ -30,6 +41,20 @@ var PostInterface = {
             reseult = err.message;
         }
         return result;
+    },
+    "scroll": direction => {
+        let [x,y] = [0,0];
+        const d = 400;
+        switch(direction) {
+        case 'left': x=-d; break;
+        case 'right': x=d; break;
+        case 'up': y=-d; break;
+        case 'down': y=d; break;
+        default: break;
+        }
+        console.log(direction);
+        window.scrollBy(x, y);
+        bestElem();
     }
 };
 
@@ -143,10 +168,10 @@ function replace(source, target) {
 }
 
 function highlight(target, color='yellow', condition=(node)=>true) {
-    if (target.length <= 0) return;
+    if (target.length <= 0) return [];
     let elements = [];
     let regex = typeof target == 'string' ? makeRegex(target) : target;
-    if (regex.test('')) return;
+    if (regex.test('')) return [];
     iterateTextNdoes(node => {
         let pNode = node.parentNode;
         if (!condition(pNode)) return;
@@ -170,7 +195,11 @@ function highlight(target, color='yellow', condition=(node)=>true) {
             elements.push(iNode);
         }
     });
-    nodeList = elements.sort((a, b) => {
+    return elements;
+}
+
+function setNodeList(elems) {
+    nodeList = elems.sort((a, b) => {
         let posA = elementPosition(a);
         let posB = elementPosition(b);
         let top1 = posA.top, left1 = posA.left;
@@ -180,7 +209,6 @@ function highlight(target, color='yellow', condition=(node)=>true) {
         if (top1 == top2 && left1 == left2) return 0;
         return 1;
     });
-    resetCounter();
 }
 
 function makeRegex(str, modifiers) {

@@ -4,6 +4,8 @@ let getBackgroundModeId = () => background.currentModeId;
 
 modeRegistry.register(new ModeNav(), 'nav');
 modeRegistry.register(new ModeCode(), 'code');
+modeRegistry.register(new ModeMulti(), 'multi');
+modeRegistry.register(new ModeNavEsc(), 'nav-esc');
 
 function setModeText(text) {
     $('#mode-hint').text(text);
@@ -17,7 +19,7 @@ function setSearchPrompt(text) {
     $('#search-prompt').text(text);
 }
 
-function getSearchText(text) {
+function getSearchText() {
     return $('#search-text').val();
 }
 
@@ -70,8 +72,9 @@ $(document).ready(() => {
             if (isCommand(text)) {
                 text = text.trim().substring(1);
                 console.log('command:', text);
+                let [cmd, ...args] = text.split(' ').filter(x=>x!='');
                 setSearchText();
-                getCommandById(text)();
+                getCommandById(cmd)(args);
                 return false;
             }
             else if (event.shiftKey) {
@@ -153,6 +156,20 @@ $(document).ready(function() {
 // });
 
 
+$(document).ready(function() {
+    $('#search-text').keydown(event => {
+        if (isCommand(getSearchText())) return true;
+
+        switch (event.which) {
+        case 27:
+            return getCurrentMode().onEscape();
+        default:
+            if ('A'.charCodeAt(0) <= event.which && event.which <= 'Z'.charCodeAt(0))
+                return getCurrentMode().onKeyDown(event.which);
+            return true;
+        }
+    });
+});
 /* detect up/down arrow is just pressed. if so, go over the history entries. */
 // var upkey = 0;
 // var downkey = 0;
