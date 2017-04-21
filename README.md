@@ -1,6 +1,9 @@
 # SearchPlus
 It is a chrome extension project in progress. I intend to privide easy and powerful page search functionality and more.
 
+## installation
+Download `SearhPlus.crx`, go to the page [chrome://extensions/](chrome://extensions/) and drag drop the extension into the page to install. You can change the keyboard shortcuts at the bottom right.
+ 
 ## Current Features
 * By Default press `Ctrl+Shift+F` to open the extension. By default it is in `nav` mode.
 * In `nav` mode, typing letters will only highlight the words in hyperlinks. Use `Enter` and `Shift+Enter` to cycle through the elements and `Ctrl+Enter` to perform a click on the text.
